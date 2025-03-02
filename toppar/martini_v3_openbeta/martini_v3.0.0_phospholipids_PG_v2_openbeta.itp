@@ -37,6 +37,7 @@
 ;          |
 ;          4 - 7 - 8 
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CC tail2:CC name:DTPG
 ;@INSANE alhead=G P, allink=G G, altail=CC CC, alname=DTPG, charge=-1.0
 ;@RESNTEST DTP==DTPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A C2A C1B C2B 
@@ -107,6 +108,7 @@
 ;          |
 ;          4 - 7 - 8 
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CC tail2:CC name:DJPG
 ;@INSANE alhead=G P, allink=G G, altail=CC CC, alname=DJPG, charge=-1.0
 ;@RESNTEST DJP==DJPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A C2A C1B C2B 
@@ -177,6 +179,7 @@
 ;          |
 ;          4 - 8 - 9 - 10
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CCC tail2:CCC name:DUPG
 ;@INSANE alhead=G P, allink=G G, altail=CCC CCC, alname=DUPG, charge=-1.0
 ;@RESNTEST DUP==DUPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A C2A C3A C1B C2B C3B 
@@ -253,6 +256,7 @@
 ;          |
 ;          4 - 8 - 9 - 10
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CCC tail2:CCC name:DMPG
 ;@INSANE alhead=G P, allink=G G, altail=CCC CCC, alname=DMPG, charge=-1.0
 ;@RESNTEST DMP==DMPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A C2A C3A C1B C2B C3B 
@@ -329,6 +333,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CCCC tail2:CCCC name:DPPG
 ;@INSANE alhead=G P, allink=G G, altail=CCCC CCCC, alname=DPPG, charge=-1.0
 ;@RESNTEST DPP==DPPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A C2A C3A C4A C1B C2B C3B C4B 
@@ -411,6 +416,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CCCC tail2:CCCC name:DSPG
 ;@INSANE alhead=G P, allink=G G, altail=CCCC CCCC, alname=DSPG, charge=-1.0
 ;@RESNTEST DSP==DSPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A C2A C3A C4A C1B C2B C3B C4B 
@@ -493,6 +499,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13- 14
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CCCCC tail2:CCCCC name:DKPG
 ;@INSANE alhead=G P, allink=G G, altail=CCCCC CCCCC, alname=DKPG, charge=-1.0
 ;@RESNTEST DKP==DKPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A C2A C3A C4A C5A C1B C2B C3B C4B C5B 
@@ -581,6 +588,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13- 14
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CCCCC tail2:CCCCC name:DBPG
 ;@INSANE alhead=G P, allink=G G, altail=CCCCC CCCCC, alname=DBPG, charge=-1.0
 ;@RESNTEST DBP==DBPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A C2A C3A C4A C5A C1B C2B C3B C4B C5B 
@@ -669,6 +677,7 @@
 ;          |
 ;          4 - 11- 12- 13- 14- 15- 16
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CCCCCC tail2:CCCCCC name:DXPG
 ;@INSANE alhead=G P, allink=G G, altail=CCCCCC CCCCCC, alname=DXPG, charge=-1.0
 ;@RESNTEST DXP==DXPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A C2A C3A C4A C5A C6A C1B C2B C3B C4B C5B C6B 
@@ -763,6 +772,7 @@
 ;          |
 ;          4 - 11- 12- 13- 14- 15- 16
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CCCCCC tail2:CCCCCC name:DCPG
 ;@INSANE alhead=G P, allink=G G, altail=CCCCCC CCCCCC, alname=DCPG, charge=-1.0
 ;@RESNTEST DCP==DCPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A C2A C3A C4A C5A C6A C1B C2B C3B C4B C5B C6B 
@@ -857,6 +867,7 @@
 ;          |
 ;          4 - 8 - 9 - 10
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CDC tail2:CDC name:DRPG
 ;@INSANE alhead=G P, allink=G G, altail=CDC CDC, alname=DRPG, charge=-1.0
 ;@RESNTEST DRP==DRPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A D2A C3A C1B D2B C3B 
@@ -933,6 +944,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CCDC tail2:CCDC name:DYPG
 ;@INSANE alhead=G P, allink=G G, altail=CCDC CCDC, alname=DYPG, charge=-1.0
 ;@RESNTEST DYP==DYPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A C2A D3A C4A C1B C2B D3B C4B 
@@ -1015,6 +1027,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CDCC tail2:CDCC name:DOPG
 ;@INSANE alhead=G P, allink=G G, altail=CDCC CDCC, alname=DOPG, charge=-1.0
 ;@RESNTEST DOP==DOPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A D2A C3A C4A C1B D2B C3B C4B 
@@ -1097,6 +1110,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CCDC tail2:CCDC name:DVPG
 ;@INSANE alhead=G P, allink=G G, altail=CCDC CCDC, alname=DVPG, charge=-1.0
 ;@RESNTEST DVP==DVPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A C2A D3A C4A C1B C2B D3B C4B 
@@ -1179,6 +1193,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13- 14
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CCDCC tail2:CCDCC name:DGPG
 ;@INSANE alhead=G P, allink=G G, altail=CCDCC CCDCC, alname=DGPG, charge=-1.0
 ;@RESNTEST DGP==DGPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A C2A D3A C4A C5A C1B C2B D3B C4B C5B 
@@ -1267,6 +1282,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13- 14
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CCDCC tail2:CCDCC name:DEPG
 ;@INSANE alhead=G P, allink=G G, altail=CCDCC CCDCC, alname=DEPG, charge=-1.0
 ;@RESNTEST DEP==DEPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A C2A D3A C4A C5A C1B C2B D3B C4B C5B 
@@ -1355,6 +1371,7 @@
 ;          |
 ;          4 - 11- 12- 13- 14- 15- 16
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CCCDCC tail2:CCCDCC name:DNPG
 ;@INSANE alhead=G P, allink=G G, altail=CCCDCC CCCDCC, alname=DNPG, charge=-1.0
 ;@RESNTEST DNP==DNPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A C2A C3A D4A C5A C6A C1B C2B C3B D4B C5B C6B 
@@ -1449,6 +1466,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CDDC tail2:CDDC name:DLPG
 ;@INSANE alhead=G P, allink=G G, altail=CDDC CDDC, alname=DLPG, charge=-1.0
 ;@RESNTEST DLP==DLPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A D2A D3A C4A C1B D2B D3B C4B 
@@ -1531,6 +1549,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CDDD tail2:CDDD name:DFPG
 ;@INSANE alhead=G P, allink=G G, altail=CDDD CDDD, alname=DFPG, charge=-1.0
 ;@RESNTEST DFP==DFPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A D2A D3A D4A C1B D2B D3B D4B 
@@ -1613,6 +1632,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13- 14
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CDDDC tail2:CDDDC name:DAPG
 ;@INSANE alhead=G P, allink=G G, altail=CDDDC CDDDC, alname=DAPG, charge=-1.0
 ;@RESNTEST DAP==DAPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A D2A D3A D4A C5A C1B D2B D3B D4B C5B 
@@ -1701,6 +1721,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13- 14
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:DDDDD tail2:DDDDD name:DDPG
 ;@INSANE alhead=G P, allink=G G, altail=DDDDD DDDDD, alname=DDPG, charge=-1.0
 ;@RESNTEST DDP==DDPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 D1A D2A D3A D4A D5A D1B D2B D3B D4B D5B 
@@ -1789,6 +1810,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CCDC tail2:CCCC name:PYPG
 ;@INSANE alhead=G P, allink=G G, altail=CCDC CCCC, alname=PYPG, charge=-1.0
 ;@RESNTEST PYP==PYPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A C2A D3A C4A C1B C2B C3B C4B 
@@ -1871,6 +1893,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CCCC tail2:CCCC name:PSPG
 ;@INSANE alhead=G P, allink=G G, altail=CCCC CCCC, alname=PSPG, charge=-1.0
 ;@RESNTEST PSP==PSPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A C2A C3A C4A C1B C2B C3B C4B 
@@ -1953,6 +1976,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CDCC tail2:CCCC name:POPG
 ;@INSANE alhead=G P, allink=G G, altail=CDCC CCCC, alname=POPG, charge=-1.0
 ;@RESNTEST POP==POPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A D2A C3A C4A C1B C2B C3B C4B 
@@ -2035,6 +2059,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CDDC tail2:CCCC name:PLPG
 ;@INSANE alhead=G P, allink=G G, altail=CDDC CCCC, alname=PLPG, charge=-1.0
 ;@RESNTEST PLP==PLPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A D2A D3A C4A C1B C2B C3B C4B 
@@ -2117,6 +2142,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CDDD tail2:CCCC name:PFPG
 ;@INSANE alhead=G P, allink=G G, altail=CDDD CCCC, alname=PFPG, charge=-1.0
 ;@RESNTEST PFP==PFPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A D2A D3A D4A C1B C2B C3B C4B 
@@ -2199,6 +2225,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CCDDC tail2:CCCC name:PIPG
 ;@INSANE alhead=G P, allink=G G, altail=CCDDC CCCC, alname=PIPG, charge=-1.0
 ;@RESNTEST PIP==PIPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A C2A D3A D4A C5A C1B C2B C3B C4B 
@@ -2284,6 +2311,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CDDDC tail2:CCCC name:PQPG
 ;@INSANE alhead=G P, allink=G G, altail=CDDDC CCCC, alname=PQPG, charge=-1.0
 ;@RESNTEST PQP==PQPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A D2A D3A D4A C5A C1B C2B C3B C4B 
@@ -2369,6 +2397,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CDDDC tail2:CCCC name:PAPG
 ;@INSANE alhead=G P, allink=G G, altail=CDDDC CCCC, alname=PAPG, charge=-1.0
 ;@RESNTEST PAP==PAPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A D2A D3A D4A C5A C1B C2B C3B C4B 
@@ -2454,6 +2483,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CCDCC tail2:CCCC name:PEPG
 ;@INSANE alhead=G P, allink=G G, altail=CCDCC CCCC, alname=PEPG, charge=-1.0
 ;@RESNTEST PEP==PEPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A C2A D3A C4A C5A C1B C2B C3B C4B 
@@ -2539,6 +2569,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:DDDDD tail2:CCCC name:PDPG
 ;@INSANE alhead=G P, allink=G G, altail=DDDDD CCCC, alname=PDPG, charge=-1.0
 ;@RESNTEST PDP==PDPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 D1A D2A D3A D4A D5A C1B C2B C3B C4B 
@@ -2624,6 +2655,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CDCC tail2:CCDC name:YOPG
 ;@INSANE alhead=G P, allink=G G, altail=CDCC CCDC, alname=YOPG, charge=-1.0
 ;@RESNTEST YOP==YOPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A D2A C3A C4A C1B C2B D3B C4B 
@@ -2706,6 +2738,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CDCC tail2:CCCC name:SOPG
 ;@INSANE alhead=G P, allink=G G, altail=CDCC CCCC, alname=SOPG, charge=-1.0
 ;@RESNTEST SOP==SOPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A D2A C3A C4A C1B C2B C3B C4B 
@@ -2788,6 +2821,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CDDC tail2:CCCC name:SLPG
 ;@INSANE alhead=G P, allink=G G, altail=CDDC CCCC, alname=SLPG, charge=-1.0
 ;@RESNTEST SLP==SLPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A D2A D3A C4A C1B C2B C3B C4B 
@@ -2870,6 +2904,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CDDDC tail2:CCCC name:SAPG
 ;@INSANE alhead=G P, allink=G G, altail=CDDDC CCCC, alname=SAPG, charge=-1.0
 ;@RESNTEST SAP==SAPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A D2A D3A D4A C5A C1B C2B C3B C4B 
@@ -2955,6 +2990,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:DDDDD tail2:CCCC name:SDPG
 ;@INSANE alhead=G P, allink=G G, altail=DDDDD CCCC, alname=SDPG, charge=-1.0
 ;@RESNTEST SDP==SDPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 D1A D2A D3A D4A D5A C1B C2B C3B C4B 
@@ -3040,6 +3076,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CDDC tail2:CDCC name:OLPG
 ;@INSANE alhead=G P, allink=G G, altail=CDDC CDCC, alname=OLPG, charge=-1.0
 ;@RESNTEST OLP==OLPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A D2A D3A C4A C1B D2B C3B C4B 
@@ -3122,6 +3159,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CCDCC tail2:CDCC name:OEPG
 ;@INSANE alhead=G P, allink=G G, altail=CCDCC CDCC, alname=OEPG, charge=-1.0
 ;@RESNTEST OEP==OEPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A C2A D3A C4A C5A C1B D2B C3B C4B 
@@ -3207,6 +3245,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:DDDDD tail2:CDCC name:ODPG
 ;@INSANE alhead=G P, allink=G G, altail=DDDDD CDCC, alname=ODPG, charge=-1.0
 ;@RESNTEST ODP==ODPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 D1A D2A D3A D4A D5A C1B D2B C3B C4B 
@@ -3292,6 +3331,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PG tail1:CDDD tail2:CDDC name:LFPG
 ;@INSANE alhead=G P, allink=G G, altail=CDDD CDDC, alname=LFPG, charge=-1.0
 ;@RESNTEST LFP==LFPG if: atoms[0]==GL0
 ;@BEADS GL0 PO4 GL1 GL2 C1A D2A D3A D4A C1B D2B D3B C4B 

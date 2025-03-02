@@ -37,6 +37,7 @@
 ;          |
 ;          4 - 7 - 8 
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CC tail2:CC name:DTPE
 ;@INSANE alhead=E P, allink=G G, altail=CC CC, alname=DTPE, charge=0.0
 ;@RESNTEST DTP==DTPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A C2A C1B C2B 
@@ -107,6 +108,7 @@
 ;          |
 ;          4 - 7 - 8 
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CC tail2:CC name:DJPE
 ;@INSANE alhead=E P, allink=G G, altail=CC CC, alname=DJPE, charge=0.0
 ;@RESNTEST DJP==DJPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A C2A C1B C2B 
@@ -177,6 +179,7 @@
 ;          |
 ;          4 - 8 - 9 - 10
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CCC tail2:CCC name:DUPE
 ;@INSANE alhead=E P, allink=G G, altail=CCC CCC, alname=DUPE, charge=0.0
 ;@RESNTEST DUP==DUPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A C2A C3A C1B C2B C3B 
@@ -253,6 +256,7 @@
 ;          |
 ;          4 - 8 - 9 - 10
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CCC tail2:CCC name:DMPE
 ;@INSANE alhead=E P, allink=G G, altail=CCC CCC, alname=DMPE, charge=0.0
 ;@RESNTEST DMP==DMPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A C2A C3A C1B C2B C3B 
@@ -329,6 +333,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CCCC tail2:CCCC name:DPPE
 ;@INSANE alhead=E P, allink=G G, altail=CCCC CCCC, alname=DPPE, charge=0.0
 ;@RESNTEST DPP==DPPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A C2A C3A C4A C1B C2B C3B C4B 
@@ -411,6 +416,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CCCC tail2:CCCC name:DSPE
 ;@INSANE alhead=E P, allink=G G, altail=CCCC CCCC, alname=DSPE, charge=0.0
 ;@RESNTEST DSP==DSPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A C2A C3A C4A C1B C2B C3B C4B 
@@ -493,6 +499,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13- 14
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CCCCC tail2:CCCCC name:DKPE
 ;@INSANE alhead=E P, allink=G G, altail=CCCCC CCCCC, alname=DKPE, charge=0.0
 ;@RESNTEST DKP==DKPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A C2A C3A C4A C5A C1B C2B C3B C4B C5B 
@@ -581,6 +588,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13- 14
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CCCCC tail2:CCCCC name:DBPE
 ;@INSANE alhead=E P, allink=G G, altail=CCCCC CCCCC, alname=DBPE, charge=0.0
 ;@RESNTEST DBP==DBPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A C2A C3A C4A C5A C1B C2B C3B C4B C5B 
@@ -669,6 +677,7 @@
 ;          |
 ;          4 - 11- 12- 13- 14- 15- 16
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CCCCCC tail2:CCCCCC name:DXPE
 ;@INSANE alhead=E P, allink=G G, altail=CCCCCC CCCCCC, alname=DXPE, charge=0.0
 ;@RESNTEST DXP==DXPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A C2A C3A C4A C5A C6A C1B C2B C3B C4B C5B C6B 
@@ -763,6 +772,7 @@
 ;          |
 ;          4 - 11- 12- 13- 14- 15- 16
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CCCCCC tail2:CCCCCC name:DCPE
 ;@INSANE alhead=E P, allink=G G, altail=CCCCCC CCCCCC, alname=DCPE, charge=0.0
 ;@RESNTEST DCP==DCPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A C2A C3A C4A C5A C6A C1B C2B C3B C4B C5B C6B 
@@ -857,6 +867,7 @@
 ;          |
 ;          4 - 8 - 9 - 10
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CDC tail2:CDC name:DRPE
 ;@INSANE alhead=E P, allink=G G, altail=CDC CDC, alname=DRPE, charge=0.0
 ;@RESNTEST DRP==DRPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A D2A C3A C1B D2B C3B 
@@ -933,6 +944,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CCDC tail2:CCDC name:DYPE
 ;@INSANE alhead=E P, allink=G G, altail=CCDC CCDC, alname=DYPE, charge=0.0
 ;@RESNTEST DYP==DYPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A C2A D3A C4A C1B C2B D3B C4B 
@@ -1015,6 +1027,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CDCC tail2:CDCC name:DOPE
 ;@INSANE alhead=E P, allink=G G, altail=CDCC CDCC, alname=DOPE, charge=0.0
 ;@RESNTEST DOP==DOPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A D2A C3A C4A C1B D2B C3B C4B 
@@ -1097,6 +1110,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CCDC tail2:CCDC name:DVPE
 ;@INSANE alhead=E P, allink=G G, altail=CCDC CCDC, alname=DVPE, charge=0.0
 ;@RESNTEST DVP==DVPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A C2A D3A C4A C1B C2B D3B C4B 
@@ -1179,6 +1193,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13- 14
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CCDCC tail2:CCDCC name:DGPE
 ;@INSANE alhead=E P, allink=G G, altail=CCDCC CCDCC, alname=DGPE, charge=0.0
 ;@RESNTEST DGP==DGPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A C2A D3A C4A C5A C1B C2B D3B C4B C5B 
@@ -1267,6 +1282,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13- 14
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CCDCC tail2:CCDCC name:DEPE
 ;@INSANE alhead=E P, allink=G G, altail=CCDCC CCDCC, alname=DEPE, charge=0.0
 ;@RESNTEST DEP==DEPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A C2A D3A C4A C5A C1B C2B D3B C4B C5B 
@@ -1355,6 +1371,7 @@
 ;          |
 ;          4 - 11- 12- 13- 14- 15- 16
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CCCDCC tail2:CCCDCC name:DNPE
 ;@INSANE alhead=E P, allink=G G, altail=CCCDCC CCCDCC, alname=DNPE, charge=0.0
 ;@RESNTEST DNP==DNPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A C2A C3A D4A C5A C6A C1B C2B C3B D4B C5B C6B 
@@ -1449,6 +1466,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CDDC tail2:CDDC name:DLPE
 ;@INSANE alhead=E P, allink=G G, altail=CDDC CDDC, alname=DLPE, charge=0.0
 ;@RESNTEST DLP==DLPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A D2A D3A C4A C1B D2B D3B C4B 
@@ -1531,6 +1549,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CDDD tail2:CDDD name:DFPE
 ;@INSANE alhead=E P, allink=G G, altail=CDDD CDDD, alname=DFPE, charge=0.0
 ;@RESNTEST DFP==DFPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A D2A D3A D4A C1B D2B D3B D4B 
@@ -1613,6 +1632,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13- 14
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CDDDC tail2:CDDDC name:DAPE
 ;@INSANE alhead=E P, allink=G G, altail=CDDDC CDDDC, alname=DAPE, charge=0.0
 ;@RESNTEST DAP==DAPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A D2A D3A D4A C5A C1B D2B D3B D4B C5B 
@@ -1701,6 +1721,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13- 14
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:DDDDD tail2:DDDDD name:DDPE
 ;@INSANE alhead=E P, allink=G G, altail=DDDDD DDDDD, alname=DDPE, charge=0.0
 ;@RESNTEST DDP==DDPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 D1A D2A D3A D4A D5A D1B D2B D3B D4B D5B 
@@ -1789,6 +1810,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CCDC tail2:CCCC name:PYPE
 ;@INSANE alhead=E P, allink=G G, altail=CCDC CCCC, alname=PYPE, charge=0.0
 ;@RESNTEST PYP==PYPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A C2A D3A C4A C1B C2B C3B C4B 
@@ -1871,6 +1893,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CCCC tail2:CCCC name:PSPE
 ;@INSANE alhead=E P, allink=G G, altail=CCCC CCCC, alname=PSPE, charge=0.0
 ;@RESNTEST PSP==PSPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A C2A C3A C4A C1B C2B C3B C4B 
@@ -1953,6 +1976,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CDCC tail2:CCCC name:POPE
 ;@INSANE alhead=E P, allink=G G, altail=CDCC CCCC, alname=POPE, charge=0.0
 ;@RESNTEST POP==POPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A D2A C3A C4A C1B C2B C3B C4B 
@@ -2035,6 +2059,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CDDC tail2:CCCC name:PLPE
 ;@INSANE alhead=E P, allink=G G, altail=CDDC CCCC, alname=PLPE, charge=0.0
 ;@RESNTEST PLP==PLPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A D2A D3A C4A C1B C2B C3B C4B 
@@ -2117,6 +2142,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CDDD tail2:CCCC name:PFPE
 ;@INSANE alhead=E P, allink=G G, altail=CDDD CCCC, alname=PFPE, charge=0.0
 ;@RESNTEST PFP==PFPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A D2A D3A D4A C1B C2B C3B C4B 
@@ -2199,6 +2225,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CCDDC tail2:CCCC name:PIPE
 ;@INSANE alhead=E P, allink=G G, altail=CCDDC CCCC, alname=PIPE, charge=0.0
 ;@RESNTEST PIP==PIPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A C2A D3A D4A C5A C1B C2B C3B C4B 
@@ -2284,6 +2311,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CDDDC tail2:CCCC name:PQPE
 ;@INSANE alhead=E P, allink=G G, altail=CDDDC CCCC, alname=PQPE, charge=0.0
 ;@RESNTEST PQP==PQPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A D2A D3A D4A C5A C1B C2B C3B C4B 
@@ -2369,6 +2397,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CDDDC tail2:CCCC name:PAPE
 ;@INSANE alhead=E P, allink=G G, altail=CDDDC CCCC, alname=PAPE, charge=0.0
 ;@RESNTEST PAP==PAPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A D2A D3A D4A C5A C1B C2B C3B C4B 
@@ -2454,6 +2483,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CCDCC tail2:CCCC name:PEPE
 ;@INSANE alhead=E P, allink=G G, altail=CCDCC CCCC, alname=PEPE, charge=0.0
 ;@RESNTEST PEP==PEPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A C2A D3A C4A C5A C1B C2B C3B C4B 
@@ -2539,6 +2569,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:DDDDD tail2:CCCC name:PDPE
 ;@INSANE alhead=E P, allink=G G, altail=DDDDD CCCC, alname=PDPE, charge=0.0
 ;@RESNTEST PDP==PDPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 D1A D2A D3A D4A D5A C1B C2B C3B C4B 
@@ -2624,6 +2655,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CDCC tail2:CCDC name:YOPE
 ;@INSANE alhead=E P, allink=G G, altail=CDCC CCDC, alname=YOPE, charge=0.0
 ;@RESNTEST YOP==YOPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A D2A C3A C4A C1B C2B D3B C4B 
@@ -2706,6 +2738,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CDCC tail2:CCCC name:SOPE
 ;@INSANE alhead=E P, allink=G G, altail=CDCC CCCC, alname=SOPE, charge=0.0
 ;@RESNTEST SOP==SOPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A D2A C3A C4A C1B C2B C3B C4B 
@@ -2788,6 +2821,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CDDC tail2:CCCC name:SLPE
 ;@INSANE alhead=E P, allink=G G, altail=CDDC CCCC, alname=SLPE, charge=0.0
 ;@RESNTEST SLP==SLPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A D2A D3A C4A C1B C2B C3B C4B 
@@ -2870,6 +2904,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CDDDC tail2:CCCC name:SAPE
 ;@INSANE alhead=E P, allink=G G, altail=CDDDC CCCC, alname=SAPE, charge=0.0
 ;@RESNTEST SAP==SAPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A D2A D3A D4A C5A C1B C2B C3B C4B 
@@ -2955,6 +2990,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:DDDDD tail2:CCCC name:SDPE
 ;@INSANE alhead=E P, allink=G G, altail=DDDDD CCCC, alname=SDPE, charge=0.0
 ;@RESNTEST SDP==SDPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 D1A D2A D3A D4A D5A C1B C2B C3B C4B 
@@ -3040,6 +3076,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CDDC tail2:CDCC name:OLPE
 ;@INSANE alhead=E P, allink=G G, altail=CDDC CDCC, alname=OLPE, charge=0.0
 ;@RESNTEST OLP==OLPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A D2A D3A C4A C1B D2B C3B C4B 
@@ -3122,6 +3159,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CDDDC tail2:CDCC name:OAPE
 ;@INSANE alhead=E P, allink=G G, altail=CDDDC CDCC, alname=OAPE, charge=0.0
 ;@RESNTEST OAP==OAPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A D2A D3A D4A C5A C1B D2B C3B C4B 
@@ -3207,6 +3245,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CCDCC tail2:CDCC name:OEPE
 ;@INSANE alhead=E P, allink=G G, altail=CCDCC CDCC, alname=OEPE, charge=0.0
 ;@RESNTEST OEP==OEPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A C2A D3A C4A C5A C1B D2B C3B C4B 
@@ -3292,6 +3331,7 @@
 ;          |
 ;          4 - 10- 11- 12- 13
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:DDDDD tail2:CDCC name:ODPE
 ;@INSANE alhead=E P, allink=G G, altail=DDDDD CDCC, alname=ODPE, charge=0.0
 ;@RESNTEST ODP==ODPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 D1A D2A D3A D4A D5A C1B D2B C3B C4B 
@@ -3377,6 +3417,7 @@
 ;          |
 ;          4 - 9 - 10- 11- 12
 ;
+;@COBY moltype:phospholipid_LTF head:PE tail1:CDDD tail2:CDDC name:LFPE
 ;@INSANE alhead=E P, allink=G G, altail=CDDD CDDC, alname=LFPE, charge=0.0
 ;@RESNTEST LFP==LFPE if: atoms[0]==NH3
 ;@BEADS NH3 PO4 GL1 GL2 C1A D2A D3A D4A C1B D2B D3B C4B 
