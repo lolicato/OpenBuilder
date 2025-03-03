@@ -10,7 +10,7 @@ import math
 import MDAnalysis as mda
 
 
-version     = "v0.0.1"
+version     = "v0.0.2"
 module_name = "membrane_only"
 
 def add_lipid():
@@ -142,24 +142,44 @@ def convert_gro_to_pdb(gro_file, pdb_file):
 
 
 
+import os
+import re
+
 def extract_molecule_types(folder_path="./toppar"):
-    """Extracts molecule types only from files containing specific keywords."""
+    """Extracts molecule types from .itp files with specific keywords in their names."""
     keywords = {"lipids", "sterols", "ceramides", "plasmalogens", "DOTAP", "diglycerides", "triglycerides"}
     molecule_types = set()
-    pattern = re.compile(r'\[moleculetype\]\s*;.*?\n\s*(\w+)')
-    
+    moleculetype_pattern = re.compile(r'^\s*\[\s*moleculetype\s*\]\s*$', re.IGNORECASE)  # More flexible
+
     for root, _, files in os.walk(folder_path):
         for file in files:
-            file_path = os.path.join(root, file)
-            
-            with open(file_path, "r", errors="ignore") as f:
-                content = f.read()
-                
-                # Check if any keyword is in the content
-                if any(keyword in content for keyword in keywords):
-                    matches = pattern.findall(content)
-                    molecule_types.update(matches)
-    
+            if any(keyword.lower() in file.lower() for keyword in keywords) and file.endswith(".itp"):
+                file_path = os.path.join(root, file)
+
+                try:
+                    with open(file_path, "r", errors="ignore") as f:
+                        lines = f.readlines()
+
+                    found_moleculetype = False
+                    for line in lines:
+                        line = line.strip()
+
+                        # Skip comments
+                        if line.startswith(";") or not line:
+                            continue
+
+                        if found_moleculetype:
+                            molecule_name = line.split()[0]  # First word after [moleculetype]
+                            molecule_types.add(molecule_name)
+                            found_moleculetype = False  # Reset after capturing
+
+                        if moleculetype_pattern.match(line):
+                            found_moleculetype = True
+
+                except Exception as e:
+                    print(f"Skipping {file_path} due to error: {e}")
+                    continue
+
     return sorted(molecule_types)
 
 
@@ -280,7 +300,7 @@ if specify_apl:
     apl_lower = st.sidebar.number_input("APL (Lower Leaflet)", min_value=0.1, max_value=2.0, value=0.6, step=0.01)
 
 
-lipid_list = extract_molecule_types()  #load_lipid_list() #extract_molecule_types()
+lipid_list = extract_molecule_types(f'./toppar/{selected_forcefield}')
 
 if "lipid_entries" not in st.session_state:
     st.session_state.lipid_entries = [(lipid_list[0], 1.0, 1.0)]
@@ -344,14 +364,31 @@ if st.sidebar.button("Build!"):
         # Generate the membrane string dynamically based on user choice
         if specify_apl:
             membrane_str = " ".join([
-                "leaflet:upper " + " ".join([f"lipid:{lip}:{upper}:charge:top" for lip, upper, _ in st.session_state.lipid_entries]) + f" apl:{apl_upper}" + f" params:TOP",
-                "leaflet:lower " + " ".join([f"lipid:{lip}:{lower}:charge:top" for lip, _, lower in st.session_state.lipid_entries]) + f" apl:{apl_lower}" + f" params:TOP"
+                "leaflet:upper " + " ".join([
+                    f"lipid:{lip}:{upper}:charge:top" + ("" if lip == "CHOL" else " params:TOP")
+                    for lip, upper, _ in st.session_state.lipid_entries
+                ]) + f" apl:{apl_upper}",
+
+                "leaflet:lower " + " ".join([
+                    f"lipid:{lip}:{lower}:charge:top" + ("" if lip == "CHOL" else " params:TOP")
+                    for lip, _, lower in st.session_state.lipid_entries
+                ]) + f" apl:{apl_lower}"
             ])
         else:
             membrane_str = " ".join([
-                "leaflet:upper " + " ".join([f"lipid:{lip}:{upper}:charge:top" for lip, upper, _ in st.session_state.lipid_entries]) + f" params:TOP",
-                "leaflet:lower " + " ".join([f"lipid:{lip}:{lower}:charge:top" for lip, _, lower in st.session_state.lipid_entries]) + f" params:TOP"
+                "leaflet:upper " + " ".join([
+                    f"lipid:{lip}:{upper}:charge:top" + ("" if lip == "CHOL" else " params:TOP")
+                    for lip, upper, _ in st.session_state.lipid_entries
+                ]),
+
+                "leaflet:lower " + " ".join([
+                    f"lipid:{lip}:{lower}:charge:top" + ("" if lip == "CHOL" else " params:TOP")
+                    for lip, _, lower in st.session_state.lipid_entries
+                ])
             ])
+
+
+
 
         print(membrane_str)
         params = {
@@ -363,7 +400,7 @@ if st.sidebar.button("Build!"):
             "solvation": solvation,
         }
         output_path = run_coby_simulation(params)
-        st.success(f"Building completed! Results saved in {output_path}")
+        st.success(f"Building completed!")
         
         zip_file = create_zip_folder(output_path)
         with open(zip_file, "rb") as f:
