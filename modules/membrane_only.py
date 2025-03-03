@@ -141,20 +141,27 @@ def convert_gro_to_pdb(gro_file, pdb_file):
 
 
 
+
 def extract_molecule_types(folder_path="./toppar"):
-    """Extracts molecule types from all files in the given folder."""
+    """Extracts molecule types only from files containing specific keywords."""
+    keywords = {"lipids", "sterols", "ceramides", "plasmalogens", "DOTAP", "diglycerides", "triglycerides"}
     molecule_types = set()
     pattern = re.compile(r'\[moleculetype\]\s*;.*?\n\s*(\w+)')
     
     for root, _, files in os.walk(folder_path):
         for file in files:
             file_path = os.path.join(root, file)
+            
             with open(file_path, "r", errors="ignore") as f:
                 content = f.read()
-                matches = pattern.findall(content)
-                molecule_types.update(matches)
+                
+                # Check if any keyword is in the content
+                if any(keyword in content for keyword in keywords):
+                    matches = pattern.findall(content)
+                    molecule_types.update(matches)
     
     return sorted(molecule_types)
+
 
 def edit_topology_file(forcefield_name, destination):
     """Edits topol.top by removing the first line and prepending all lines from the force field .itp file."""
@@ -257,7 +264,7 @@ st.sidebar.header("System Configuration")
 box_x = st.sidebar.number_input("Box Size X (nm)", 5.0, 50.0, 10.0)
 box_y = st.sidebar.number_input("Box Size Y (nm)", 5.0, 50.0, 10.0)
 box_z = st.sidebar.number_input("Box Size Z (nm)", 5.0, 50.0, 10.0)
-box_type = st.sidebar.selectbox("Box Type", ["rectangular", "hexagonal (Working in progress)", "dodecahedron (Working in progress)"])
+box_type = st.sidebar.selectbox("Box Type", ["rectangular"])
 
 # If user selects a WIP option, show an error
 if "Working in progress" in box_type:
@@ -317,7 +324,7 @@ if not math.isclose(lower_sum, 1.0, rel_tol=1e-9):
 st.sidebar.header("Solvation Configuration")
 
 # Dropdown for selecting positive and negative ions
-positive_ion = st.sidebar.selectbox("Select Positive Ion (Cation)", ["NA", "K", "CA"])
+positive_ion = st.sidebar.selectbox("Select Positive Ion (Cation)", ["NA", "CA"])
 negative_ion = st.sidebar.selectbox("Select Negative Ion (Anion)", ["CL", "BR", "IOD", "ACE", "BF4", "PF6", "SCN", "CLO4", "NO3"])
 
 # Number input for salt concentration (molarity)
