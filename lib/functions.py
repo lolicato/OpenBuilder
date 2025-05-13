@@ -401,9 +401,11 @@ def overwrite_moleculetype_line(itp_file):
 ########################################################################################################################################################################################################################################
 def add_lipid_absolute():
     """Adds a new lipid entry with default values."""
+    lipid_list = st.session_state["lipid_list"]
     st.session_state.lipid_entries_absolute.append((lipid_list[0], 0, 0))
 def add_lipid_relative():
     """Adds a new lipid entry with default values."""
+    lipid_list = st.session_state["lipid_list"]
     st.session_state.lipid_entries_relative.append((lipid_list[0], 0.0, 0.0))
 
 def remove_lipid_absolute():
