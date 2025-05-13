@@ -5,5 +5,7 @@
 #include "martini_v2.2/martini_v2.0_phospholipids_PG.itp"
 #include "martini_v2.2/martini_v2.0_phospholipids_PA.itp"
 #include "martini_v2.2/martini_v2.0_phospholipids_PS.itp"
-
-
+#include "martini_v2.2/martini_v2.0_phospholipids_PI.itp"
+#include "martini_v2.2/martini_v2.0_phospholipids_P1.itp"
+#include "martini_v2.2/martini_v2.0_phospholipids_P2.itp"
+#include "martini_v2.2/martini_v2.0_phospholipids_P3.itp"
