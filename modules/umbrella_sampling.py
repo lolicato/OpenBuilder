@@ -84,6 +84,7 @@ if specify_apl:
 
 
 lipid_list = extract_molecule_types(f'./toppar/{selected_forcefield}')
+st.session_state["lipid_list"] = lipid_list
 
 if "lipid_entries_relative" not in st.session_state:
     st.session_state.lipid_entries_relative = [(lipid_list[0], 1.0, 1.0)]
