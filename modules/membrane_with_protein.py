@@ -347,24 +347,24 @@ if build:
             if specify_apl:
                 membrane_str = " ".join([
                     "leaflet:upper " + " ".join([
-                        f"lipid:{lip}:{upper}:charge:top" + ("" if lip == "CHOL" else " params:TOP")
+                        f"lipid:{lip}:{upper}:charge:top:" + ("params:default" if lip == "CHOL" else "params:TOP")
                         for lip, upper, _ in st.session_state.lipid_entries_relative if upper>0
                     ]) + f" apl:{apl_upper}",
 
                     "leaflet:lower " + " ".join([
-                        f"lipid:{lip}:{lower}:charge:top" + ("" if lip == "CHOL" else " params:TOP")
+                        f"lipid:{lip}:{lower}:charge:top:" + ("params:default" if lip == "CHOL" else "params:TOP")
                         for lip, _, lower in st.session_state.lipid_entries_relative if lower>0
                     ]) + f" apl:{apl_lower}"
                 ])
             else:
                 membrane_str = " ".join([
                     "leaflet:upper " + " ".join([
-                        f"lipid:{lip}:{upper}:charge:top" + ("" if lip == "CHOL" else " params:TOP")
+                        f"lipid:{lip}:{upper}:charge:top:" + ("params:default" if lip == "CHOL" else "params:TOP")
                         for lip, upper, _ in st.session_state.lipid_entries_relative if upper>0
                     ]),
 
                     "leaflet:lower " + " ".join([
-                        f"lipid:{lip}:{lower}:charge:top" + ("" if lip == "CHOL" else " params:TOP")
+                        f"lipid:{lip}:{lower}:charge:top:" + ("params:default" if lip == "CHOL" else "params:TOP")
                         for lip, _, lower in st.session_state.lipid_entries_relative if lower>0
                     ])
                 ])
@@ -372,29 +372,30 @@ if build:
             if specify_apl:
                 membrane_str = " ".join([
                     "leaflet:upper " + " ".join([
-                        f"lipid:{lip}:{upper}:charge:top" + ("" if lip == "CHOL" else " params:TOP")
+                        f"lipid:{lip}:{upper}:charge:top:" + ("params:default" if lip == "CHOL" else "params:TOP")
                         for lip, upper, _ in st.session_state.lipid_entries_absolute  if upper>0
                     ]) + f" apl:{apl_upper}",
 
                     "leaflet:lower " + " ".join([
-                        f"lipid:{lip}:{lower}:charge:top" + ("" if lip == "CHOL" else " params:TOP")
+                        f"lipid:{lip}:{lower}:charge:top:" + ("params:default" if lip == "CHOL" else "params:TOP")
                         for lip, _, lower in st.session_state.lipid_entries_absolute if lower>0
                     ]),
                 ])
             else:
                 membrane_str = " ".join([
                     "leaflet:upper " + " ".join([
-                        f"lipid:{lip}:{upper}:charge:top" + ("" if lip == "CHOL" else " params:TOP")
+                        f"lipid:{lip}:{upper}:charge:top:" + ("params:default" if lip == "CHOL" else "params:TOP")
                         for lip, upper, _ in st.session_state.lipid_entries_absolute if upper>0
                     ]),
                     "lipid_optim:abs_val",
 
                     "leaflet:lower " + " ".join([
-                        f"lipid:{lip}:{lower}:charge:top" + ("" if lip == "CHOL" else " params:TOP")
+                        f"lipid:{lip}:{lower}:charge:top:" + ("params:default" if lip == "CHOL" else "params:TOP")
                         for lip, _, lower in st.session_state.lipid_entries_absolute if lower>0
                     ]),
                     "lipid_optim:abs_val"
                 ])
+
 
         params = {
             "box_x": box_x,
