@@ -247,9 +247,11 @@ nt_option = st.sidebar.selectbox(
     "Select the terminal group charges:",
     ("charged", "uncharged")
 )
+free_input_parameters = st.sidebar.text_input("Enter free input parameters:")
 params_for_martini = {"force_field_martinization": force_field_martinization,
     "network_model": network_model,
     "nt_option": nt_option,
+    "free_input_params": free_input_parameters
 }
     
    
@@ -347,24 +349,24 @@ if build:
             if specify_apl:
                 membrane_str = " ".join([
                     "leaflet:upper " + " ".join([
-                        f"lipid:{lip}:{upper}:charge:top:" + ("params:default" if lip == "CHOL" else "params:TOP")
+                        f"lipid:{lip}:{upper}:charge:top" + ("" if lip == "CHOL" else " params:TOP")
                         for lip, upper, _ in st.session_state.lipid_entries_relative if upper>0
                     ]) + f" apl:{apl_upper}",
 
                     "leaflet:lower " + " ".join([
-                        f"lipid:{lip}:{lower}:charge:top:" + ("params:default" if lip == "CHOL" else "params:TOP")
+                        f"lipid:{lip}:{lower}:charge:top" + ("" if lip == "CHOL" else " params:TOP")
                         for lip, _, lower in st.session_state.lipid_entries_relative if lower>0
                     ]) + f" apl:{apl_lower}"
                 ])
             else:
                 membrane_str = " ".join([
                     "leaflet:upper " + " ".join([
-                        f"lipid:{lip}:{upper}:charge:top:" + ("params:default" if lip == "CHOL" else "params:TOP")
+                        f"lipid:{lip}:{upper}:charge:top" + ("" if lip == "CHOL" else " params:TOP")
                         for lip, upper, _ in st.session_state.lipid_entries_relative if upper>0
                     ]),
 
                     "leaflet:lower " + " ".join([
-                        f"lipid:{lip}:{lower}:charge:top:" + ("params:default" if lip == "CHOL" else "params:TOP")
+                        f"lipid:{lip}:{lower}:charge:top" + ("" if lip == "CHOL" else " params:TOP")
                         for lip, _, lower in st.session_state.lipid_entries_relative if lower>0
                     ])
                 ])
@@ -372,30 +374,30 @@ if build:
             if specify_apl:
                 membrane_str = " ".join([
                     "leaflet:upper " + " ".join([
-                        f"lipid:{lip}:{upper}:charge:top:" + ("params:default" if lip == "CHOL" else "params:TOP")
+                        f"lipid:{lip}:{upper}:charge:top" + ("" if lip == "CHOL" else " params:TOP")
                         for lip, upper, _ in st.session_state.lipid_entries_absolute  if upper>0
                     ]) + f" apl:{apl_upper}",
 
                     "leaflet:lower " + " ".join([
-                        f"lipid:{lip}:{lower}:charge:top:" + ("params:default" if lip == "CHOL" else "params:TOP")
+                        f"lipid:{lip}:{lower}:charge:top" + ("" if lip == "CHOL" else " params:TOP")
                         for lip, _, lower in st.session_state.lipid_entries_absolute if lower>0
                     ]),
                 ])
             else:
                 membrane_str = " ".join([
                     "leaflet:upper " + " ".join([
-                        f"lipid:{lip}:{upper}:charge:top:" + ("params:default" if lip == "CHOL" else "params:TOP")
+                        f"lipid:{lip}:{upper}:charge:top" + ("" if lip == "CHOL" else " params:TOP")
                         for lip, upper, _ in st.session_state.lipid_entries_absolute if upper>0
                     ]),
                     "lipid_optim:abs_val",
 
                     "leaflet:lower " + " ".join([
-                        f"lipid:{lip}:{lower}:charge:top:" + ("params:default" if lip == "CHOL" else "params:TOP")
+                        f"lipid:{lip}:{lower}:charge:top" + ("" if lip == "CHOL" else " params:TOP")
                         for lip, _, lower in st.session_state.lipid_entries_absolute if lower>0
                     ]),
                     "lipid_optim:abs_val"
                 ])
-
+        st.write(membrane_str)
 
         params = {
             "box_x": box_x,
@@ -512,12 +514,12 @@ if build:
                 st_molstar(converted_pdb, height=500)
             else:
                 st.error("Visualization failed: Could not convert .gro to .pdb")
-        if protein_for_membrane_with_protein == "Create Helix from a FASTA file":
-            for folder in system_folder:
-                zip_file = create_zip_folder(folder)
-                with open(zip_file, "rb") as f:
-                    st.download_button("Download Simulation Output (ZIP)", f, file_name=os.path.basename(zip_file))
-        elif protein_for_membrane_with_protein== "Upload clean pdb file":
-            zip_file = create_zip_folder(system_folder)
-            with open(zip_file, "rb") as f:
-                st.download_button("Download Simulation Output (ZIP)", f, file_name=os.path.basename(zip_file))
+        #if protein_for_membrane_with_protein == "Create Helix from a FASTA file":
+         #   for folder in system_folder:
+          #      zip_file = create_zip_folder(folder)
+           #     with open(zip_file, "rb") as f:
+            #        st.download_button("Download Simulation Output (ZIP)", f, file_name=os.path.basename(zip_file))
+        #elif protein_for_membrane_with_protein== "Upload clean pdb file":
+         #   zip_file = create_zip_folder(system_folder)
+          #  with open(zip_file, "rb") as f:
+           #     st.download_button("Download Simulation Output (ZIP)", f, file_name=os.path.basename(zip_file))
