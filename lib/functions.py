@@ -9,6 +9,7 @@ import random
 import argparse
 import numpy as np
 import glob
+import shlex
 
 from Bio import SeqIO
 from Bio.PDB import PDBIO, Select
@@ -193,7 +194,9 @@ def process_function(systemname, sequence, system_folder, n_systems, params_for_
             "system": system_folder_with_index
         })
     # Optionally, store the list in Streamlit's session state for later use:
-    st.session_state["system_files"] = system_files
+    if "system_files" not in st.session_state:
+        st.session_state["system_files"] = []
+    st.session_state["system_files"] += system_files
 
     # Optionally, clean up temporary files (check for existence first)
     if os.path.exists(martinized_itp):
@@ -317,17 +320,21 @@ def martinization(helix_output, systemname, system_folder, params_for_martini):
 
     # Read parameters for martinization
     force_field_martinization = params_for_martini["force_field_martinization"]
+    free_input = params_for_martini["free_input_params"]
+    free_input_args = shlex.split(free_input) if free_input else []
     nt_option = params_for_martini["nt_option"]
     network_model = params_for_martini["network_model"]
     nt_flag = "-nt" if nt_option == "uncharged" else ""
     network_model_flag = "-elastic" if network_model == "elastic network" else ""
 
     if force_field_martinization == "martini3001":
+        
         martinize_command = [
             "martinize2",
             "-f", helix_output,
             "-x", output_protein_path,
             "-o", output_topology_path,
+            *free_input_args,
             "-name", systemname,
             "-maxwarn", "1"
         ]
@@ -337,6 +344,7 @@ def martinization(helix_output, systemname, system_folder, params_for_martini):
             "-f", helix_output,
             "-x", output_protein_path,
             "-o", output_topology_path,
+            *free_input_args,
             "-ff", "martini22",
             "-noscfix",
             "-name", systemname,
@@ -348,7 +356,7 @@ def martinization(helix_output, systemname, system_folder, params_for_martini):
             "-f", helix_output,
             "-x", output_protein_path,
             "-o", output_topology_path,
-            "-maxwarn", "2",
+            *free_input_args,
             "-ff", "martini3007",
             "-ff-dir", path_to_ff_dir,
             "-map-dir", path_to_map_dir,
