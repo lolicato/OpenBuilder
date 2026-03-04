@@ -1,0 +1,17 @@
+name: openBuilder
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - biopython
+  - mdanalysis
+  - numpy
+  - pandas
+  - scikit-learn
+  - scipy
+  - streamlit
+  - pip:
+      - COBY
+      - streamlit-molstar
