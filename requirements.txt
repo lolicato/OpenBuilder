@@ -1,0 +1,16 @@
+biopython
+COBY 
+dataclasses
+MDAnalysis
+os
+pandas
+pathlib
+random
+re
+scipy
+shutil
+streamlit
+streamlit-molstar
+subprocess
+sys
+typing
