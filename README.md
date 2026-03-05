@@ -1,4 +1,4 @@
-# OpenBuilder
+# OpenBuilder v0.1.0
 
 OpenBuilder is a web-based tool for molecular modeling workflows built with **Python**, **MDAnalysis**, and **Streamlit**.  
 It is designed to simplify structural preparation, analysis, and visualization tasks commonly encountered in computational structural biology and molecular simulations.
