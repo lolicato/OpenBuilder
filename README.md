@@ -52,6 +52,7 @@ Your browser will automatically open the local web interface.
 The environment installs the main dependencies automatically, including:
 
 - Python 3.10
+- COBY
 - MDAnalysis
 - NumPy
 - Pandas
