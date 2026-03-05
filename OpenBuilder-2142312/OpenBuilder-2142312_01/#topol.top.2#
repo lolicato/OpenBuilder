@@ -1,0 +1,28 @@
+#include "martini_v3/martini_v3.0.0.itp"
+#include "martini_v3/martini_v3.0.0_ffbonded_v2.itp"
+#include "martini_v3/martini_v3.0.0_solvents_v1.itp"
+#include "martini_v3/martini_v3.0.0_ions_v1.itp"
+#include "martini_v3/martini_v3.0.0_phospholipids_PC_v2.itp"
+#include "martini_v3/martini_v3.0.0_phospholipids_PE_v2.itp"
+#include "martini_v3/martini_v3.0.0_phospholipids_PG_v2.itp"
+#include "martini_v3/martini_v3.0.0_phospholipids_PI_v2.itp"
+#include "martini_v3/martini_v3.0.0_phospholipids_PS_v2.itp"
+#include "martini_v3/martini_v3.0.0_phospholipids_PA_v2.itp"
+#include "martini_v3/martini_v3.0.0_phospholipids_SM_v2.itp"
+#include "martini_v3/martini_v3.0.0_sterols_v1.itp"
+#include "protein.itp"
+
+[ system ]
+; name
+PLACEHOLDER_TITLE
+
+[ molecules ]
+; name number
+Protein     1
+POPC      150
+SAP6       17
+POPC      150
+SAP6       17
+W       13083
+NA        266
+CL        142
