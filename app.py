@@ -13,7 +13,7 @@ from gromacs import *
 from topology import *
 from utils import *
 
-st.set_page_config(page_title="OpenBuilder", layout="wide")
+st.set_page_config(page_title="OpenBuilder v0.1.1", layout="wide")
 
 class OpenBuilderApp:
     def __init__(self):
@@ -22,7 +22,6 @@ class OpenBuilderApp:
         self.topologyeditor = TopologyEditor()
         self.parser = MartiniLipidParser(Path("toppar"))
         self.builder = MembraneBuilder(self.parser)
-        self.helixbuilder = HelixBuilder()
         self.proteinprocessor = CGProteinProcessor()
         self.inserter = ProteinInserter()
         self.eq_runner = EquilibrationRunner()
@@ -33,30 +32,24 @@ class OpenBuilderApp:
             <h1 style='color: red; font-size: 24px;'>🚀 OpenBuilder</h1>
         """, unsafe_allow_html=True)
 
-        # Sidebar: Module Selection
+
         st.sidebar.header("📋 Module Selection")
         selected_module = st.sidebar.selectbox(
             "Select Module", 
             ["membrane_with_cg_protein"]
         )
 
-        # Initialize session_state on first load
+
         if "output_name" not in st.session_state:
             st.session_state.output_name = f"OpenBuilder-{random.randint(1000000, 9999999)}"
 
-        # Use session_state value as default, but editable
+
         self.config.output_name = st.sidebar.text_input(
             "📁 Output folder name", 
-            key="output_name"  # ← Auto-saves to session_state
+            key="output_name"  
         )
 
-        # Optional: Visual feedback
-        #if st.sidebar.button("🎲 New Random", key="new_random"):
-        #    st.session_state.output_name = f"OpenBuilder-{random.randint(1000000, 9999999)}"
-        #    st.rerun()
 
-
-        # Force Field & Box
         forcefields = self.ffmanager.get_forcefield_names("toppar")
         self.config.selected_ff = st.sidebar.selectbox("⚛️ Force Field", forcefields, 
             index=forcefields.index("martini_v3") if "martini_v3" in forcefields else 0)
@@ -67,12 +60,12 @@ class OpenBuilderApp:
         self.config.box_z = col3.number_input("📦 Box Z (nm)", 5.0, 50.0, 10.0)
         self.config.box_type = st.sidebar.selectbox("Box Type", ["rectangular"])
 
-        # OPTIONAL: Own Lipid Upload Section
+  
         st.sidebar.markdown("---")
-        #own_lipid_upload = st.sidebar.checkbox("📁 Upload own lipids")
+
         molecule_uploader = ""
 
-        # Initialize session state for imported lipids
+
         if "imported_lipids" not in st.session_state:
             st.session_state.imported_lipids = []
         if "uploaded_topo_paths" not in st.session_state:
@@ -80,53 +73,6 @@ class OpenBuilderApp:
         if "uploaded_struct_paths" not in st.session_state:
             st.session_state.uploaded_struct_paths = {}
 
-        #if own_lipid_upload:
-        #    st.sidebar.markdown("### 📤 Lipid Upload")
-        #    
-        #    os.makedirs("./temp_uploads", exist_ok=True)
-        #    os.makedirs("./temp_structs", exist_ok=True)
-        #    
-        #    uploaded_topo = st.sidebar.file_uploader(
-        #        "🔗 Lipid topology (.itp)", 
-        #        type=['itp'],
-        #        key="topo_uploader"
-        #    )
-            
-        #    uploaded_struct = st.sidebar.file_uploader(
-        #        "🧬 Lipid structure (.pdb/.gro)", 
-        #        type=['pdb', 'gro'],
-        #        key="struct_uploader"
-        #    )
-        #    
-        #    if uploaded_topo is not None and uploaded_struct is not None:
-        #        topo_path = os.path.join("temp_uploads", uploaded_topo.name)
-        #        with open(topo_path, "wb") as f:
-        #            f.write(uploaded_topo.getbuffer())
-        #        st.session_state["uploaded_topo_paths"][uploaded_topo.name] = topo_path
-        #        
-        #        struct_path = os.path.join("temp_structs", uploaded_struct.name)
-        #        with open(struct_path, "wb") as f:
-        #            f.write(uploaded_struct.getbuffer())
-        #        st.session_state["uploaded_struct_paths"][uploaded_struct.name] = struct_path
-        #        
-        #        lipid_name = os.path.splitext(uploaded_struct.name)[0]
-        #        
-        #        if lipid_name not in st.session_state.imported_lipids:
-        #            st.session_state.imported_lipids.append(lipid_name)
-        #        
-        #        molecule_uploader = " ".join([
-        #            f"file:{struct_path}",
-        #            f"name:{lipid_name}",
-        #            "params:IMPORTED"
-        #        ])
-        #        st.session_state["molecule_uploader"] = molecule_uploader
-                
-                #st.sidebar.success(f"✅ {lipid_name}: `{struct_path}` → COBY ready")
-        #    elif uploaded_topo is None or uploaded_struct is None:
-        #        st.sidebar.warning("⚠️ Upload both .itp AND .pdb/.gro for molecule import")
-        #        molecule_uploader = ""
-
-        # Membrane Config
         self.builder.setup_lipids(self.config.selected_ff)
         self.config.lipid_mode = st.sidebar.selectbox("🧪 Lipid Mode", ["Relative ratio"])
         self.builder.update_lipids(self.config.lipid_mode)
@@ -139,46 +85,38 @@ class OpenBuilderApp:
             if not available_lipids and not st.session_state.imported_lipids:
                 available_lipids = ["POPC"]
                 st.warning("⚠️ No lipids found → using POPC")
-            
-            imported_count = len(st.session_state.imported_lipids)
-            total_count = len(all_lipids)
+
             
             
             self.builder.streamlitentries(all_lipids)
 
-        # ✅ NEW: Solvation with exact format requested
+
         st.sidebar.markdown("---")
         st.sidebar.subheader("🧂 Solvation")
         
-        if self.config.selected_ff == "martini_v2.2":  # Note: exact match needed
-            pos_ion = "NA"
-            neg_ion = "CL"
-            st.sidebar.info("🛡️ Martini v2.2: Fixed NA/CL ions")
-        else:
-            pos_ion = st.sidebar.selectbox("➕ Positive Ion", ["NA", "CA"], key="pos_ion")
-            neg_ion = st.sidebar.selectbox("➖ Negative Ion", ["CL", "BR", "IOD", "ACE", "BF4", "PF6", "SCN", "CLO4", "NO3"], key="neg_ion")
+
+
+        pos_ion = st.sidebar.selectbox("➕ Positive Ion", ["NA", "CA"], key="pos_ion")
+        neg_ion = st.sidebar.selectbox("➖ Negative Ion", ["CL", "BR", "IOD", "ACE", "BF4", "PF6", "SCN", "CLO4", "NO3"], key="neg_ion")
         
         self.config.salt_molarity = st.sidebar.number_input("🧂 Salt Molarity (M)", 0.0, 2.0, 0.15, key="salt_molarity")
         
-        # ✅ EXACT FORMAT as requested
+
         self.config.solvation = f"solv:W pos:{pos_ion} neg:{neg_ion} salt_molarity:{self.config.salt_molarity}"
         self.config.n_systems = st.sidebar.number_input("🔄 Systems", 1, 99, 1)
-        # Protein/Helix uploads
-        # Protein/Helix uploads section → REPLACE with:
 
-        # Protein/Helix uploads - SAVE TO temp_uploads
         self.config.fasta_file = None
         self.config.pdb_file = None
         self.config.itp_file = None
 
-        os.makedirs("./temp_uploads", exist_ok=True)  # Ensure temp dir
+        os.makedirs("./temp_uploads", exist_ok=True)  
 
         self.config.pdb_file = st.sidebar.file_uploader("🧬 PDB", type="pdb")
         if self.config.pdb_file is not None:
             pdb_path = os.path.join("./temp_uploads", self.config.pdb_file.name)
             with open(pdb_path, "wb") as f:
                 f.write(self.config.pdb_file.getbuffer())
-            self.config.pdb_file = pdb_path  # Replace → path
+            self.config.pdb_file = pdb_path  
 
                 
         self.config.itp_file = st.sidebar.file_uploader("🔗 ITP", type="itp")
@@ -186,7 +124,7 @@ class OpenBuilderApp:
             itp_path = os.path.join("./temp_uploads", self.config.itp_file.name)
             with open(itp_path, "wb") as f:
                 f.write(self.config.itp_file.getbuffer())
-            self.config.itp_file = itp_path  # Replace → path
+            self.config.itp_file = itp_path  
 
 
 
@@ -195,19 +133,16 @@ class OpenBuilderApp:
         self.inserter.setup_insertion_params(self.config)
 
 
-        # Advanced options
+
         self.config.run_eq = st.sidebar.checkbox("⚙️ Run EM + Equilibration")
         if self.config.run_eq:
             self.config.sim_temp = st.sidebar.number_input("🌡️ Temperature (K)", 0, 500, 310)
             self.config.sim_time = st.sidebar.number_input("⏱️ Time (μs)", 0.0, 25.0, 5.0)
 
-        #self.config.param_file = st.sidebar.checkbox("💾 Save Parameters TXT")
 
-        # BUILD BUTTON
-        # BUILD BUTTON - UPDATED (rename system_folder → base_folder)
         st.sidebar.markdown("---")
 
-        # n_systems input (MOVE FROM protein section if there)
+
 
 
         base_folder = f"{self.config.output_name}"
@@ -223,7 +158,7 @@ class OpenBuilderApp:
                     st.error("❌ Upload PDB file first!")
                     st.stop()
                 
-                # VALIDATION: LEAFLET SUMS (unchanged)
+    
                 membrane_str = self.builder.create_membrane_str(self.config.lipid_mode)
                 upper_match = membrane_str.split("leaflet:upper ")[1].split("leaflet:lower")[0].strip() if "leaflet:upper " in membrane_str else ""
                 lower_match = membrane_str.split("leaflet:lower ")[1].strip() if "leaflet:lower " in membrane_str else ""
@@ -257,16 +192,16 @@ class OpenBuilderApp:
                 progress_bar = st.progress(0)
                 status_text = st.empty()
                 
-                # CALL WITH base_folder (creates subfolders inside)
+             
                 self.execute_build(selected_module, base_folder, progress_bar, status_text, molecule_uploader)
                 
-                # Params to base_folder
+                
                 if self.config.param_file:
                     save_params_txt(base_folder, self.config, self.builder.create_membrane_str(self.config.lipid_mode))
                 
                 st.balloons()
                 st.success(f"🎉 {self.config.n_systems} systems complete in `{base_folder}`!")
-                # Add to END of execute_build() method, before final st.success:
+                
                 if os.path.exists("./temp_uploads"):
                     shutil.rmtree("./temp_uploads")
                     print("🧹 Cleared ./temp_uploads/")
@@ -278,13 +213,13 @@ class OpenBuilderApp:
 
         
 
-    # REPLACE ENTIRE execute_build method in OpenBuilderApp:
+
 
     def execute_build(self, selected_module, base_folder, progress_bar, status_text, molecule_uploader):
         """Build multiple enumerated systems in subfolders"""
         os.makedirs(base_folder, exist_ok=True)
         
-        # CREATE NUMBERED SUBFOLDERS: base_01, base_02, ...
+
         systems = []
         for i in range(self.config.n_systems):
             system_num = f"{i+1:02d}"
@@ -301,14 +236,14 @@ class OpenBuilderApp:
             if step == "Setup FF/MDP":
                 for system_folder in systems:
                         
-                    # Shared FF/MDP in base_folder
+
                     self.ffmanager.copy_ff_folder(self.config.selected_ff, system_folder)
                     if self.config.run_eq:
                         mdp_target = "protein" if "protein" in selected_module else "membrane"
                         self.ffmanager.copy_mdp_files(self.config.selected_ff, system_folder, mdp_target)
             
             elif step == "Process inputs":
-                self.params = {  # Instance var for reuse
+                self.params = {  
                     'boxx': float(self.config.box_x),
                     'boxy': float(self.config.box_y),
                     'boxz': float(self.config.box_z),
@@ -323,11 +258,7 @@ class OpenBuilderApp:
                 
                 
                 
-                # Shared protein prep (if needed)
-                if selected_module == "membrane_with_helix":
-                    helix_pdb = self.helixbuilder.build_from_fasta(
-                        self.config.fasta_file, base_folder,
-                        ccap=self.config.c_cap, ncap=self.config.n_cap)
+
             
             elif step == "Per-System Pipeline":
                 protein_exists = True
@@ -336,11 +267,11 @@ class OpenBuilderApp:
                 for system_num, system in enumerate(systems):
                     status_text.info(f"🔄 System {system_num+1}/{len(systems)} → {os.path.basename(system)}")
                     mdp_folder = os.path.join(system, "mdp")
-                    # Protein processing (per system)
+     
                     
                     pdb_dest = os.path.join(system, "protein.pdb")
                     itp_dest = os.path.join(system, 'protein.itp')
-                    shutil.copy2(self.config.pdb_file, pdb_dest)  # Path → system/protein.pdb
+                    shutil.copy2(self.config.pdb_file, pdb_dest)  
                     shutil.copy2(self.config.itp_file, itp_dest)
                     self.config.itp_file = itp_dest
                     self.config.pdb_file = pdb_dest
@@ -348,7 +279,7 @@ class OpenBuilderApp:
                         
 
 
-                    # Insert protein
+          
                     itp_input2 = ""
 
                     itp_input2 = f'include:{self.config.itp_file}'
@@ -360,12 +291,12 @@ class OpenBuilderApp:
                     self.topologyeditor.overwrite_moleculetype_line(self.config.itp_file)
 
                     
-                    # COBY + topology
+                   
                     coby_output = run_coby_simulation(self.params, protein_line, system)
                     self.topologyeditor.edit_topology(self.config.selected_ff, system)
                     self.topologyeditor.fix_protein_includes_only(f"{coby_output}/topol.top")
                     
-                    # Equilibration
+               
                     if self.config.run_eq:
                         system_gro = os.path.join(system, "system.gro")
                         if os.path.exists(system_gro):
@@ -378,7 +309,7 @@ class OpenBuilderApp:
             
             elif step == "Package":
                 for system_num, system in enumerate(systems):
-                    # Final structure
+                    
                     gro_candidate = os.path.join(system, "eq3.gro")
                     gro_path = gro_candidate if os.path.exists(gro_candidate) else os.path.join(system, "system.gro")
                     
@@ -392,7 +323,7 @@ class OpenBuilderApp:
                                     expanded=system_num < 2):
                             st_molstar(pdb_path, height=400)
                     
-                    # ZIP download
+   
                     zip_path = create_zip_folder(system)
                     try:
                         with open(zip_path, 'rb') as f:

@@ -46,31 +46,30 @@ class ProteinInserter:
     def insert_protein(self, pdb_path: str, system_path: str, config) -> str:
         base_pdb = os.path.splitext(pdb_path)[0]
         
-        upper_z_mem = 0.0  # Default
-        # ✅ COBY-only for membrane height measurement
+        upper_z_mem = 0.0  
         if config.z_method == 'Height above Membrane':
-            # Build TEMP membrane-only system via COBY
+           
             temp_dir = os.path.join(system_path, "temp_membrane_z")
             os.makedirs(temp_dir, exist_ok=True)
             
-            # Membrane-only params (no protein)
+            
             membrane_params = {
                 'boxx': config.box_x, 'boxy': config.box_y, 'boxz': config.box_z,
                 'box_type': config.box_type,
-                'membrane': self.builder.create_membrane_str(config.lipid_mode),  # Lipid comp
-                'moleculeimport': "",  # No custom lipids for measurement
+                'membrane': self.builder.create_membrane_str(config.lipid_mode),  
+                'moleculeimport': "",  
                 'solvation': config.solvation,
                 'selectedforcefield': config.selected_ff,
                 'itp_input': f"include:toppar/{config.selected_ff}.itp"
             }
             
-            protein_line = ""  # Membrane ONLY
+            protein_line = ""  
             try:
-                # Run COBY → pure membrane system
+              
                 output_path = run_coby_simulation(membrane_params, protein_line, temp_dir, copy_mdp=False
                 )
                 
-                # Measure Z from membrane-only GRO
+             
                 membrane_gro = os.path.join(temp_dir, "system.gro")
                 upper_z_mem = self._measure_membrane_z(membrane_gro, config.lipid_mode)
                 print(f"📏 Measured upper Z: {upper_z_mem:.2f} nm (membrane-only)")
@@ -79,13 +78,13 @@ class ProteinInserter:
                 st.error(f"❌ Membrane measurement failed: {e}")
                 upper_z_mem = 0.0
             finally:
-                # Always cleanup temp
+               
                 if os.path.exists(temp_dir):
                     shutil.rmtree(temp_dir)
         
         print('pos1 the insert\n')
         
-        # Rotation (unchanged)
+
         if self.randomize_rot and self.randomize_every:
             new_pdb, z_shift = self._random_orientation(base_pdb)
         elif config.rx or config.ry or config.rz:
@@ -94,13 +93,13 @@ class ProteinInserter:
             new_pdb = pdb_path
             z_shift = 0
         
-        # Z-Position (uses measured upper_z_mem)
+     
         if config.z_method != "Absolute z position":
             cz = upper_z_mem + z_shift + 10 + config.distance_to_mem - config.box_z / 2
         else:
-            cz = config.cz  # Absolute override
+            cz = config.cz  
         
-        # X/Y (unchanged)
+       
         if self.randomize_pos and self.randomize_every:
             cx = random.uniform(-(config.box_x/2 - 2.5), config.box_x/2 - 2.5)
             cy = random.uniform(-(config.box_y/2 - 2.5), config.box_y/2 - 2.5)
@@ -118,25 +117,25 @@ class ProteinInserter:
         new_pdb = pdb_path + "_rotated.pdb"
         with mda.Writer(new_pdb) as w:
             w.write(u.atoms)
-        return new_pdb, 0  # zshift calculation...
+        return new_pdb, 0  
 
     def _random_orientation(self, pdb_path):
-        # Random rotation logic
+
         rx, ry, rz = [random.uniform(-180, 180) for _ in range(3)]
         return self._manual_rotation(pdb_path, rx, ry, rz)
 
 
     def _measure_membrane_z(self, gro_path: str, lipid_mode: str) -> float:
         """
-        Measure upper membrane Z from existing GRO (no temp COBY needed).
+        Measure upper membrane Z from existing GRO .
         Returns mean Z of top 10% lipid atoms (upper leaflet).
         """
         try:
-            # Load existing GRO directly
+           
             
             u = mda.Universe(gro_path)
             
-            # Get lipids from session state (matches lipid_mode)
+            
             if lipid_mode == "Relative ratio":
                 lipid_names = [lipid for lipid, _, _, _, _ in st.session_state.lipid_entries_relative]
             elif lipid_mode == "Absolute numbers":
@@ -149,20 +148,20 @@ class ProteinInserter:
                 st.warning("No lipids defined → default Z=0")
                 return 0.0
             
-            # Select lipid atoms
+          
             lipid_atoms = u.select_atoms(f"resname {' '.join(lipid_names)}")
             
             if len(lipid_atoms) == 0:
                 st.warning(f"No {lipid_names} atoms found in {gro_path}")
                 return 0.0
             
-            # Extract Z positions
+ 
             z_positions = lipid_atoms.positions[:, 2]
             
-            # Upper leaflet: top 10% Z values (mean of highest)
+            
             top_10_percent = int(0.1 * len(z_positions))
             if top_10_percent == 0:
-                top_10_percent = 1  # At least 1
+                top_10_percent = 1  
             
             upper_z_values = np.sort(z_positions)[-top_10_percent:]
             upper_z_membrane = np.mean(upper_z_values)
@@ -178,14 +177,3 @@ class ProteinInserter:
             return 0.0
 
     
-    def insert_protein_umbrella(self, pdb_path, system_path, config, resid=0):
-        """Rotate for umbrella around resid."""
-        u = mda.Universe(pdb_path)
-        sel = u.select_atoms(f"resid {resid}")
-        if len(sel) == 0: st.warning("No resid found")
-        com = u.atoms.center_of_mass()
-        rot = R.from_euler('xyz', [config.rx, config.ry, config.rz], degrees=True)
-        u.atoms.positions = rot.apply(u.atoms.positions - com) + com
-        new_pdb = pdb_path.replace('.pdb', '_umbrella.pdb')
-        with mda.Writer(new_pdb) as w: w.write(u.atoms)
-        return self.insert_protein(new_pdb, system_path, config)  # Chain

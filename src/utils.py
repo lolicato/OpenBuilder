@@ -27,7 +27,7 @@ def convert_gro_to_pdb(gro_file: str, pdb_file: str) -> Optional[str]:
         st.error(f"Gro→Pdb failed: {e}")
         return None
 def run_coby_simulation(params: dict, protein_line: Optional[str], system_path: str, copy_mdp: bool = True) -> str:
-    """Fixed COBY - correct order + args"""
+    """Combine args and run COBY"""
     
     selected_forcefield = params["selectedforcefield"]
     
@@ -52,20 +52,11 @@ def run_coby_simulation(params: dict, protein_line: Optional[str], system_path: 
     if protein_line:
         coby_args["protein"] = protein_line
 
-    # 3. RUN COBY FIRST → creates topol.top
+  
 
     COBY.COBY(**coby_args)
     
-    # 4. NOW edit_topology (topol.top exists!)
-    #topology_editor = TopologyEditor()
-    #topology_editor.edit_topology(selected_forcefield, system_path)
-    
-    # 5. Post-process
-    #out_itp = os.path.join(system_path, f"{selected_forcefield}.itp")
-    #if os.path.exists(out_itp):
-        # Your overwrite logic
-    #    topology_editor.overwrite_molecule_type(out_itp, os.path.join(system_path, "topol.top"))
-    #    os.remove(out_itp)
+
     
     return system_path
 
@@ -80,8 +71,9 @@ def show_structure(pdb_path: str, height: int = 500):
         with open(pdb_path, 'r') as f:
             st.code(f.read()[:1000], language="pdb")
 
-## Final app.py execute_build (clean)
+
 def execute_build(self, selected_module):
+    """Run all functions that collect data for COBY and create all neccessary folders for output"""
     params = {
         'boxx': self.config.box_x, 'boxy': self.config.box_y, 'boxz': self.config.box_z,
         'boxtype': self.config.box_type,
@@ -98,17 +90,13 @@ def execute_build(self, selected_module):
     
     systems = [system_folder]
     
-    # Protein prep
-    if selected_module == "membrane_with_helix":
-        helix_pdb = self.helixbuilder.build_from_fasta(self.config.fasta_file.getvalue(), 
-                                                      system_folder, 
-                                                      ccap=self.config.c_cap, ncap=self.config.ncap)
-        systems = self.proteinprocessor.process_helix(helix_pdb, self.config.n_systems, params, system_folder)
-    elif selected_module in ["membrane_with_cg_protein", "membrane_with_aa_protein"]:
+
+    
+    if selected_module == "membrane_with_cg_protein":
         systems = self.proteinprocessor.process_pdb(self.config.pdb_file.getvalue(), 
                                                    self.config.n_systems, params, system_folder)
     
-    # COBY + topology for each system
+   
     for system in systems:
         protein_line = self.inserter.insert_protein(os.path.join(system, "protein.pdb"), system, self.config) \
                        if selected_module != "membrane" else None
@@ -121,7 +109,7 @@ def execute_build(self, selected_module):
                                     self.config.selected_ff, self.config.sim_time, 
                                     self.config.sim_temp, protein_exists=selected_module != "membrane")
         
-        # Download
+
         gro_path = os.path.join(os.path.dirname(output_coby), "eq3.gro" if self.config.run_eq else "system.gro")
         pdb_path = convert_gro_to_pdb(gro_path, gro_path.replace('.gro', '.pdb'))
         if pdb_path:
@@ -139,24 +127,19 @@ def process_cg_protein(pdb_bytes, nsystems, params, folder, martini_params):
     with open(pdb_file, 'wb') as f: f.write(pdb_bytes)
     processor = CGProteinProcessor()
     system_files = processor.process_pdb(pdb_file, nsystems, params, folder)
-    # Martinize each
+
     for itp, pdb in system_files:
         name = os.path.basename(folder)
-        mart_pdb, mart_top, mart_itp = martinize_pdb(pdb, name, folder, martini_params)  # New func below
-        # Copy to subs as in batch
+        mart_pdb, mart_top, mart_itp = martinize_pdb(pdb, name, folder, martini_params)  
     return system_files
 
-def martinize_pdb(pdb_path, name, folder, params):
-    """Generic martinize2 (reuse from builders)."""
-    # Same as builders.martinize_helix but generic
-    # ...
 
 def save_params_txt(system_path, config, membrane_str):
     """Parameter export."""
     with open(os.path.join(system_path, "parameters.txt"), 'w') as f:
         f.write(f"FF: {config.selected_ff}\nBox: {config.boxx}x{config.boxy}x{config.boxz}\n")
         f.write(f"Membrane: {membrane_str}\nSolvation: {config.solvation}\n")
-        # Add all config fields...
+       
     st.success("Params saved!")
 
 

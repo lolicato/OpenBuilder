@@ -30,8 +30,8 @@ class Config:
     rz: float = 0.0
     z_method: str = "Absolute z position"
     distance_to_mem: float = 2.0
-    forcefield_martini: str = "martini3001"  # martini22, martini3001, alpha-0.2.2
-    network_model: str = "none"  # none, elastic
-    nt_option: str = "charged"  # charged, uncharged
+    forcefield_martini: str = "martini3001"  
+    network_model: str = "none" 
+    nt_option: str = "charged" 
     free_martini_params: str = ""
     resid_umbrella: int = 0

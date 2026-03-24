@@ -7,10 +7,10 @@ from typing import List
 
 class GROMACSRunner:
     def __init__(self):
-        self.gmx_cmd = ["gmx"]  # YOUR PATH!
+        self.gmx_cmd = ["gmx"] 
 
     def run_grompp(self, mdp_name: str, system_folder: str, mdp_path: str, ff: str) -> List[str]:
-        # ALL ABSOLUTE PATHS - NO cwd!
+
         system_folder = os.path.abspath(system_folder)
         mdp_path = os.path.abspath(mdp_path)
         
@@ -32,7 +32,7 @@ class GROMACSRunner:
             cmd += ["-n", os.path.join(system_folder, "index.ndx")]
         cmd += ["-o", os.path.join(system_folder, f"{mdp_name}.tpr")]
         
-        self._run_cmd(cmd)  # ← FIXED: Use _run_cmd (no cwd)
+        self._run_cmd(cmd)
         return cmd
 
     def run_mdrun(self, mdp_name: str, system_folder: str, mdp_path: str, ff: str):
@@ -48,7 +48,7 @@ class GROMACSRunner:
             self._run_cmd(mdrun_cmd) 
 
 
-    def _run_cmd(self, cmd: List[str], input: str = None):  # ← RENAMED/SIMPLIFIED
+    def _run_cmd(self, cmd: List[str], input: str = None): 
         """Run cmd from current directory using absolute paths"""
         try:
             print(f"🏃 Running: {' '.join(cmd)}")
@@ -95,7 +95,7 @@ class GROMACSRunner:
     def generate_index(self, lipid_mode: str, system_folder: str, ff: str, protein_exists: bool):
         system_folder = os.path.abspath(system_folder)
         
-        # Get lipids from session
+       
         if lipid_mode == "Relative ratio":
             lipid_names = [li for li, _, _, _, _ in st.session_state.lipid_entries_relative]
         else:
@@ -104,13 +104,13 @@ class GROMACSRunner:
         gro_file = os.path.join(system_folder, "em.gro")
         ndx_tmp = os.path.join(system_folder, "index_test.ndx")
         
-        # PASS 1: Get default groups + detect last_idx
+
         dump_cmd = self.gmx_cmd + ["make_ndx", "-f", gro_file, "-o", ndx_tmp]
         result = subprocess.run(
             dump_cmd, input="q\n", text=True, capture_output=True, check=True
         )
         
-        # Parse last_idx from output
+       
         last_idx = 0
         for line in result.stdout.splitlines():
             m = re.match(r'^\s*(\d+)\s+\S+\s*:\s*\d+\s+atoms', line)
@@ -119,11 +119,11 @@ class GROMACSRunner:
         
         print(f"🔍 Detected {last_idx} default groups")
         
-        # PASS 2: Build custom index with delete
+     
         cmds, _ = self._build_index_cmds(lipid_names, ff, protein_exists, 
                                     delete_groups=True, last_idx=last_idx)
         
-        # ✅ FIXED: Proper EOF for make_ndx
+      
         cmd_input = "\n".join(cmds) + "\nq\n"
         
         print("=== NDX CMDS ===")
@@ -135,7 +135,7 @@ class GROMACSRunner:
         index_cmd = self.gmx_cmd + ["make_ndx", "-f", gro_file, "-o", os.path.join(system_folder, "index.ndx")]
         self._run_cmd(index_cmd, input=cmd_input)
         
-        # Cleanup
+
         if os.path.exists(ndx_tmp):
             os.remove(ndx_tmp)
         
@@ -145,19 +145,19 @@ class GROMACSRunner:
 
 class EquilibrationRunner:
     def run_full_eq(self, lipid_mode: str, system_file: str, mdp_path: str, ff: str, sim_time: float, sim_temp: int, protein: bool):
-        system_folder = os.path.abspath(os.path.dirname(system_file))  # Absolute path
+        system_folder = os.path.abspath(os.path.dirname(system_file)) 
         
         gmx = GROMACSRunner()
         
-        # EM
+       
         gmx.run_mdrun("em", system_folder, mdp_path, ff)
         gmx.generate_index(lipid_mode, system_folder, ff, protein)
         
-        # Change MDP params (absolute paths safe)
+       
         self._change_mdp(mdp_path, "time", sim_time, protein)
         self._change_mdp(mdp_path, "temperature", sim_temp, protein)
         
-        # EQ1-3 + MD
+
         for eq in ["eq1", "eq2", "eq3", "md"]:
             gmx.run_mdrun(eq, system_folder, mdp_path, ff)
 
@@ -167,7 +167,7 @@ class EquilibrationRunner:
         """Unchanged - uses absolute paths"""
         mdp_dir = os.path.abspath(mdp_path)
 
-        # ... rest identical (safe with abs paths)
+
 
         if change_parameter == "time":
             mdp_file = os.path.join(mdp_dir, "md.mdp")
@@ -178,7 +178,7 @@ class EquilibrationRunner:
             with open(mdp_file, 'r') as f:
                 lines = f.readlines()
             
-            # Extract dt, ignoring comments
+            
             dt = None
             dt_pattern = r'dt\s*=\s*(\d+(?:\.\d+)?)'
             for line in lines:
@@ -193,10 +193,10 @@ class EquilibrationRunner:
                 print("Error: dt not found in md.mdp (ignoring comment lines)")
                 return False
             
-            # nsteps = µs * 1e6 ps/µs / dt (ps/step)
+           
             nsteps = int(round(new_value * 1000000 / dt))
             
-            # Replace nsteps: clean old comment, add runtime µs
+            
             new_lines = []
             nsteps_pattern = r'nsteps\s*=\s*\d+'
             replaced = False
@@ -205,10 +205,10 @@ class EquilibrationRunner:
                     new_lines.append(line)
                     continue
                 if re.search(nsteps_pattern, line):
-                    # Replace value, remove old comment, add new
+                  
                     new_line = re.sub(nsteps_pattern, f'nsteps = {nsteps}', line)
-                    new_line = re.sub(r'\s*;.*$', '', new_line.rstrip())  # Nuke old ;comment
-                    new_line += f' ; runtime={new_value} µs\n'  # Add fresh comment
+                    new_line = re.sub(r'\s*;.*$', '', new_line.rstrip())  
+                    new_line += f' ; runtime={new_value} µs\n'  
                     new_lines.append(new_line)
                     replaced = True
                 else:
@@ -242,7 +242,7 @@ class EquilibrationRunner:
                         new_lines.append(line)
                         continue
                     
-                    # ref_t for groups (e.g., Protein Solvent) [web:12][web:20]
+                   
                     if not ref_replaced:
                         ref_match = re.search(r'ref_t\s*=\s*[^\n;]*', line)
                         if ref_match:
@@ -254,7 +254,7 @@ class EquilibrationRunner:
                             ref_replaced = True
                             continue
                     
-                    # gen_temp = initial T [web:17]
+                    
                     if not gen_replaced:
                         gen_match = re.search(r'gen_temp\s*=\s*[^\n;]*', line)
                         if gen_match:

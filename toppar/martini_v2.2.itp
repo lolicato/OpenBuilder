@@ -1,9 +1,0 @@
-#include "martini_v2.2/martini_v2.2.0.itp"
-#include "martini_v2.2/martini_v2.0_solvents.itp"
-#include "martini_v2.2/martini_v2.0_ions.itp"
-#include "martini_v2.2/martini_v2.0_phospholipids_PC.itp"
-#include "martini_v2.2/martini_v2.0_phospholipids_PE.itp"
-#include "martini_v2.2/martini_v2.0_phospholipids_PG.itp"
-#include "martini_v2.2/martini_v2.0_phospholipids_PA.itp"
-#include "martini_v2.2/martini_v2.0_phospholipids_PS.itp"
-
