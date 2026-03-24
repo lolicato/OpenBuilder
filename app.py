@@ -29,7 +29,7 @@ class OpenBuilderApp:
 
     def run(self):
         st.markdown("""
-            <h1 style='color: red; font-size: 24px;'>🚀 OpenBuilder</h1>
+            <h1 style='color: red; font-size: 24px;'>🚀 OpenBuilder v0.1.1</h1>
         """, unsafe_allow_html=True)
 
 
