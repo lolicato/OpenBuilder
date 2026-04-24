@@ -6,20 +6,30 @@ class TopologyEditor:
     def edit_topology(self, ff_name: str, destination: str):
         topol_file = os.path.join(destination, "topol.top")
         ff_itp = os.path.join("toppar", f"{ff_name}.itp")
-        
+
         if not os.path.exists(ff_itp):
             st.warning(f"{ff_itp} not found")
             return
-        
+
         with open(ff_itp, 'r') as f:
-            itp_content = f.read().strip()
+            itp_lines = f.readlines()
         with open(topol_file, 'r') as f:
-            topol_lines = f.readlines()[1:]  
-        
-        merged = itp_content + "\n" + "".join(topol_lines)
+            topol_lines = f.readlines()[1:]
+
+        def fix_include_path(line):
+            # Match: #include "some/path/file.itp"
+            return re.sub(
+                r'(#include\s+")(.*?)(")',
+                lambda m: m.group(1) + "../../toppar/" + m.group(2) + m.group(3),
+                line
+            )
+
+        fixed_itp_lines = [fix_include_path(line) for line in itp_lines]
+        fixed_topol_lines = [fix_include_path(line) for line in topol_lines]
+
+        merged = "".join(fixed_itp_lines) + "\n" + "".join(fixed_topol_lines)
         with open(topol_file, 'w') as f:
             f.write(merged)
-
 
 
     def overwrite_moleculetype_line(self, itp_file: str):
@@ -52,7 +62,13 @@ class TopologyEditor:
             f.writelines(updated_lines)
     def fix_protein_includes_only(self, topol_path: str):
         """
+        ONLY fix #include paths ENDING in protein.itp (others unchanged).
         
+        #include "/path/protein.itp"   →  #include "protein.itp"
+        #include "/path/martini.itp"   →  UNCHANGED
+        
+        Args:
+            topol_path: Path to topol.top
         """
         with open(topol_path, 'r') as f:
             lines = f.readlines()
@@ -67,7 +83,7 @@ class TopologyEditor:
             match = re.match(protein_pattern, line)
             if match:
                 full_path = match.group(0).strip()  
-                new_line = '#include "protein.itp"\n'
+                new_line = '#include "../../toppar/protein.itp"\n'
                 updated_lines.append(new_line)
                 modified = True
                 print(f"🔧 {full_path.strip()} → protein.itp")

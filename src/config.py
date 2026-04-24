@@ -1,37 +1,55 @@
-import streamlit as st
 from dataclasses import dataclass
-from typing import Optional
 
 @dataclass
 class Config:
+    # --- General ---
     output_name: str = "OpenBuilder-"
     selected_ff: str = "martini_v3"
+    base_folder: str = ""
+    selected_module: str = ""
+
+
+    # --- Box ---
     box_x: float = 10.0
     box_y: float = 10.0
     box_z: float = 10.0
     box_type: str = "rectangular"
+
+    # --- Solvation / ions ---
     solvation: str = ""
     salt_molarity: float = 0.15
+
+    # --- Systems ---
     n_systems: int = 1
-    n_cap: str = ""
-    c_cap: str = ""
-    run_eq: bool = False
-    sim_temp: int = 310
-    sim_time: float = 5.0
-    param_file: bool = False
-    fasta_file: Optional[bytes] = None
-    pdb_file: Optional[bytes] = None
-    itp_file: Optional[bytes] = None
+
+
+    # --- Resolved file paths (set after writing uploads to disk) ---
+    pdb_path: str = ""
+    itp_path: str = ""
+
+    # --- Protein positioning ---
+    # randomize flags
+    randomize_pos: bool = False        # randomise x/y for all systems equally
+    randomize_pos_every: bool = False  # re-randomise x/y for each system
+    randomize_rot: bool = False        # randomise rotation for all systems equally
+    randomize_rot_every: bool = False  # re-randomise rotation for each system
+
+    # manual position (used when randomize_pos is False)
     cx: float = 0.0
     cy: float = 0.0
     cz: float = 0.0
+
+    # z placement strategy
+    z_method: str = "Absolute z position"   # or "Height above Membrane"
+    distance_to_mem: float = 2.0            # nm above upper leaflet
+
+    # manual rotation angles in degrees (used when randomize_rot is False)
     rx: float = 0.0
     ry: float = 0.0
     rz: float = 0.0
-    z_method: str = "Absolute z position"
-    distance_to_mem: float = 2.0
-    forcefield_martini: str = "martini3001"  
-    network_model: str = "none" 
-    nt_option: str = "charged" 
-    free_martini_params: str = ""
-    resid_umbrella: int = 0
+
+
+    # --- Lipids ---
+    lipid_mode: str = ""
+    membrane_string: str = ""
+
