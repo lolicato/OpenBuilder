@@ -1,33 +1,33 @@
-# OpenBuilder v0.1.1
+# OpenBuilder v1.0.2
 
-OpenBuilder is a web-based tool for molecular modeling workflows built with **Python**, **MDAnalysis**, and **Streamlit**.  
-It is designed to simplify structural preparation, analysis, and visualization tasks commonly encountered in computational structural biology and molecular simulations.
+OpenBuilder is a **web interface for COBY** designed specifically for building (and in the futurea nalyzing) **MARTINI coarse-grained molecular simulations**.
+
+Built with **Python**, **MDAnalysis**, and **Streamlit**, OpenBuilder aims to make simulation system preparation, analysis, and visualization more accessible through an intuitive web interface, without sacrificing reproducibility or local control.
 
 ![Application GUI](./pictures/GUI.png)
 
 ---
 
-## Features
+## Features and Future Directions
 
-- Interactive **web interface** powered by Streamlit
-- Integration with **MDAnalysis** for trajectory and structure handling
-- Tools for molecular system preparation and analysis
-- Lightweight environment setup using **Conda**
-- Designed for reproducible computational workflows
+- Interactive web interface powered by Streamlit  
+- System preparation workflows built on COBY  
+- Local-first execution model  
+- Future hosted deployment at **open-builder.com**
 
 ---
 
 ## Installation
 
-We recommend installing OpenBuilder using the provided **Conda environment**.
+We recommend installing OpenBuilder using the provided Conda environment.
 
-### 1. Create the environment
+### Create the environment
 
 ```bash
 conda env create -f environment.yml
 ```
 
-### 2. Activate the environment
+### Activate the environment
 
 ```bash
 conda activate openBuilder
@@ -35,53 +35,67 @@ conda activate openBuilder
 
 ---
 
-## Running the Application
+## Running OpenBuilder
 
-Once the environment is activated, launch the web application with:
+Launch the local web interface with:
 
 ```bash
 streamlit run app.py
 ```
 
-Your browser will automatically open the local web interface.
+Your browser should automatically open the application.
 
 ---
 
 ## Requirements
 
-The environment installs the main dependencies automatically, including:
+Main dependencies include:
 
-- Python 3.10
-- COBY
-- MDAnalysis
-- NumPy
-- Pandas
-- SciPy
-- Scikit-learn
-- Streamlit
+- Python 3.10  
+- COBY  
+- MDAnalysis  
+- NumPy  
+- Pandas  
+- SciPy  
+- Scikit-learn  
+- Streamlit  
 
-Additional packages are installed via pip where required.
+Additional packages may be installed through pip where required.
 
 ---
 
 ## Contributing
 
-Contributions, suggestions, and bug reports are welcome.  
-Please open an issue or submit a pull request.
+We welcome:
+
+- Bug reports  
+- Feature requests  
+- Documentation improvements (creation) 
+- Pull requests  
+- New simulation workflows  
+
+If you'd like to help shape OpenBuilder, feel free to open an issue or contact us directly.
 
 ---
 
 ## License
 
-This project is distributed under the MIT License.
+This software is currently available for academic and personal use only.
+
+Modification, redistribution, forks, or derivative works are not permitted without prior written permission from the authors.
+
+The project will be released under an open-source license after publication of the first associated research paper.
+
+See the LICENSE file for full details.
 
 ---
 
 ## Acknowledgements
 
-OpenBuilder builds upon several outstanding open-source projects in the computational molecular science ecosystem, including:
+OpenBuilder builds on the work of incredible open-source communities:
 
-- **COBY**
-- **MDAnalysis**
-- **Streamlit**
-- **NumPy / SciPy**
+- COBY  
+- MDAnalysis  
+- Streamlit  
+- NumPy  
+- SciPy  
