@@ -1,3 +1,7 @@
+## Citation
+
+If you use OpenBuilder in your research, please cite both OpenBuilder (when a formal publication becomes available) and the original COBY publication:
+
 @article{Andreasen2025,
 	author = {Andreasen, Mikkel D. and Souza, Paulo C. T. and Schiøtt, Birgit and Zuzic, Lorena},
 	title = {Creating Coarse-Grained Systems with COBY: Toward Higher Accuracy of Complex Biological Systems},
