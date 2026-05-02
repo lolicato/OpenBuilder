@@ -123,9 +123,11 @@ class Gui:
 
     def cg_protein_upload_input(self):
         ''' Upload areas for protein pdb and itp files, saved into a temporary folder'''
-        self.config.pdb_file = st.sidebar.file_uploader("🧬 PDB", type="pdb")
         random_name = st.session_state.random_name
-        os.makedirs(f"./temp_uploads-{random_name}", exist_ok=True) 
+        temp_dir = f"./temp_uploads-{random_name}"
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        self.config.pdb_file = st.sidebar.file_uploader("🧬 PDB", type="pdb")
         if self.config.pdb_file is not None:
             
             pdb_path = os.path.join(f"./temp_uploads-{random_name}", self.config.pdb_file.name)

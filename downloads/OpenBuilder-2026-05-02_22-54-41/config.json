@@ -1,0 +1,50 @@
+{
+    "output_name": "outputs/OpenBuilder-2026-05-02_22-54-41",
+    "selected_ff": "martini_v3",
+    "base_folder": "",
+    "selected_module": "membrane_with_cg_protein",
+    "box_x": 10.0,
+    "box_y": 10.0,
+    "box_z": 30.0,
+    "box_type": "rectangular",
+    "solvation": "solv:W pos:NA neg:CL salt_molarity:0.11",
+    "salt_molarity": 0.11,
+    "n_systems": 2,
+    "pdb_path": "outputs/OpenBuilder-2026-05-02_22-54-41/simulations/R0002/protein.pdb",
+    "itp_path": "outputs/OpenBuilder-2026-05-02_22-54-41/toppar/protein.itp",
+    "randomize_pos": true,
+    "randomize_pos_every": true,
+    "randomize_rot": true,
+    "randomize_rot_every": true,
+    "cx": 0.0,
+    "cy": 0.0,
+    "cz": 0.0,
+    "z_method": "Height above Membrane",
+    "distance_to_mem": 3.0,
+    "rx": 0.0,
+    "ry": 0.0,
+    "rz": 0.0,
+    "lipid_mode": "",
+    "membrane_string": "grid_maker_grouping_algorithm:no_groups leaflet:upper lipid:BSM:1.0:charge:top:params:TOP:apl:0.6 leaflet:lower lipid:BSM:1.0:charge:top:params:TOP:apl:0.6",
+    "abs_lip_vals": false,
+    "lipid_entries_relative": [
+        [
+            "BSM",
+            1.0,
+            1.0,
+            0.6,
+            0.6
+        ]
+    ],
+    "lipid_entries_absolute": [],
+    "entries": [
+        [
+            "BSM",
+            1.0,
+            1.0,
+            0.6,
+            0.6
+        ]
+    ],
+    "imported_lipids": []
+}

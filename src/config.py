@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
+import json
 
 @dataclass
 class Config:
@@ -48,8 +49,34 @@ class Config:
     ry: float = 0.0
     rz: float = 0.0
 
-
     # --- Lipids ---
     lipid_mode: str = ""
     membrane_string: str = ""
 
+    # save GUI values into Config
+    abs_lip_vals: bool = False
+    lipid_entries_relative: list = None
+    lipid_entries_absolute: list = None
+    entries: list = None
+    imported_lipids: list = None
+
+    def __post_init__(self):
+        if self.lipid_entries_relative is None:
+            self.lipid_entries_relative = []
+        if self.lipid_entries_absolute is None:
+            self.lipid_entries_absolute = []
+        if self.entries is None:
+            self.entries = []
+        if self.imported_lipids is None:
+            self.imported_lipids = []
+
+    # --- JSON helpers ---
+    def to_json(self, path: str):
+        with open(path, "w") as f:
+            json.dump(asdict(self), f, indent=4)
+
+    @classmethod
+    def from_json(cls, path: str):
+        with open(path, "r") as f:
+            data = json.load(f)
+        return cls(**data)

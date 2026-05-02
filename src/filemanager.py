@@ -1,7 +1,7 @@
 import shutil
 import os
 from pathlib import Path
-
+import json
 
 
 class FileManager():
@@ -37,7 +37,7 @@ class FileManager():
     def create_zip_folder(self, folder_path: str) -> str:
         '''creates a downloadable zip folder form the output'''
         folder_path = Path(folder_path)
-        downloads_dir = folder_path.parent / "downloads"
+        downloads_dir = Path("downloads")
         downloads_dir.mkdir(parents=True, exist_ok=True)
         
         zip_base = downloads_dir / folder_path.name
@@ -45,3 +45,4 @@ class FileManager():
         
         zip_path = zip_base.with_suffix('.zip')
         return str(zip_path)
+    

@@ -32,16 +32,16 @@ class ProteinInserter:
 
         # ---- Z placement ------------------------------------------------
         upper_z_mem = 0.0
-        if st.session_state.z_method == "Height above Membrane":
+        if config.z_method == "Height above Membrane":
             upper_z_mem = self._measure_membrane_upper_z(system_path, config)
             upper_z_mem_nm = upper_z_mem / 10.0
-            cz = upper_z_mem_nm + st.session_state.distance_to_mem - config.box_z / 2
+            cz = upper_z_mem_nm + config.distance_to_mem - config.box_z / 2
         else:
             cz = config.cz
 
         # ---- X/Y position -----------------------------------------------
-        do_random_pos = st.session_state.randomize_pos and (
-            st.session_state.randomize_pos_every or system_index == 0)
+        do_random_pos = config.randomize_pos and (
+            config.randomize_pos_every or system_index == 0)
 
         if do_random_pos:
             margin = 2.5
@@ -55,10 +55,10 @@ class ProteinInserter:
 
         # ---- Rotation ---------------------------------------------------
         if config.n_systems == 1:
-            do_random_rot = st.session_state.randomize_rot
+            do_random_rot = config.randomize_rot
         else:
-            do_random_rot = st.session_state.randomize_rot and (
-                st.session_state.randomize_rot_every or system_index == 0)
+            do_random_rot = config.randomize_rot and (
+                config.randomize_rot_every or system_index == 0)
 
         if do_random_rot:
             rx = random.uniform(-180.0, 180.0)
@@ -68,7 +68,7 @@ class ProteinInserter:
             rx, ry, rz = config.rx, config.ry, config.rz
 
         # ---- COM-to-bottom offset (only for Height above Membrane) ------
-        if st.session_state.z_method == "Height above Membrane":
+        if config.z_method == "Height above Membrane":
             u = mda.Universe(pdb_path)
             com = u.atoms.center_of_geometry()
 
@@ -157,7 +157,7 @@ class ProteinInserter:
                 "boxy": config.box_y,
                 "boxz": config.box_z,
                 "box_type": config.box_type,
-                "membrane": self.builder.create_membrane_str(),
+                "membrane": config.membrane_string,
                 "moleculeimport": "",
                 "solvation": config.solvation,
                 "selectedforcefield": config.selected_ff,
@@ -165,7 +165,7 @@ class ProteinInserter:
             }
             run_coby_simulation(membrane_params, "", temp_dir, copy_mdp=False)
             membrane_gro = os.path.join(temp_dir, "system.gro")
-            return self._measure_membrane_z(membrane_gro, config.lipid_mode)
+            return self._measure_membrane_z(membrane_gro, config)
         except Exception as e:
             st.error(f"❌ Membrane Z measurement failed: {e}")
             return 0.0
@@ -173,14 +173,14 @@ class ProteinInserter:
             if os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)
 
-    def _measure_membrane_z(self, gro_path: str, lipid_mode: str) -> float:
+    def _measure_membrane_z(self, gro_path: str, config) -> float:
         """Return mean Z of top-10% lipid atoms (Angstrom)."""
         try:
             u = mda.Universe(gro_path)
 
 
             lipid_names = [entry[0] for entry in
-                               st.session_state.lipid_entries_relative]
+                               config.lipid_entries_relative]
 
 
             if not lipid_names:
