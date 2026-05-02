@@ -1,4 +1,4 @@
-# OpenBuilder v1.0.2
+# OpenBuilder-dev
 
 OpenBuilder is a **web interface for COBY** designed specifically for building (and in the future analyzing) **MARTINI coarse-grained molecular simulations**.
 
