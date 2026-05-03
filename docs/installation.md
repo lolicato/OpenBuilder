@@ -12,7 +12,7 @@ cd OpenBuilder
 ### Development version (specific branch)
 
 ```bash
-git clone -b dev https://github.com/lolicato/OpenBuilder.git
+git clone -b development https://github.com/lolicato/OpenBuilder.git
 cd OpenBuilder
 ```
 
