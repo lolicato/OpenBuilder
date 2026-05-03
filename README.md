@@ -21,6 +21,12 @@ Built with **Python**, **MDAnalysis**, and **Streamlit**, OpenBuilder aims to ma
 
 We recommend installing OpenBuilder using the provided Conda environment.
 
+### Download repository
+```bash
+git clone https://github.com/lolicato/OpenBuilder.git
+cd OpenBuilder
+```
+
 ### Create the environment
 
 ```bash
@@ -30,7 +36,7 @@ conda env create -f environment.yml
 ### Activate the environment
 
 ```bash
-conda activate openBuilder
+conda activate OpenBuilder
 ```
 
 ---
@@ -44,6 +50,7 @@ streamlit run app.py
 ```
 
 Your browser should automatically open the application.
+On the first run and initial build, startup and execution may take longer as Python compiles source files into .pyc bytecode and caches dependencies, improving performance for subsequent runs.
 
 ---
 
