@@ -1,4 +1,4 @@
-# OpenBuilder-dev
+# OpenBuilder-v1.0.3-dev
 
 **OpenBuilder** is a graphical and command-line tool for building Martini coarse-grained membrane and membrane–protein systems.
 
