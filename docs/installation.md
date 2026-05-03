@@ -1,12 +1,30 @@
 # Installation
 
+## 📥 Clone the repository
+
+### Stable version
+
+```bash
+git clone https://github.com/lolicato/OpenBuilder.git
+cd OpenBuilder
+```
+
+### Development version (specific branch)
+
+```bash
+git clone -b dev https://github.com/lolicato/OpenBuilder.git
+cd OpenBuilder
+```
+
+---
+
 ## 🐍 Conda Environment
 
 We recommend installing OpenBuilder using a Conda environment:
 
 ```bash
 conda env create -f environment.yml
-conda activate OpenBuilder-dev
+conda activate OpenBuilder # actuvate OpenBuilder-dev for development version
 ```
 
 ---
