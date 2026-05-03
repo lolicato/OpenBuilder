@@ -24,7 +24,7 @@ We recommend installing OpenBuilder using a Conda environment:
 
 ```bash
 conda env create -f environment.yml
-conda activate OpenBuilder # actuvate OpenBuilder-dev for development version
+conda activate OpenBuilder # activate OpenBuilder-dev for development version
 ```
 
 ---
