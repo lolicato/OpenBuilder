@@ -57,6 +57,12 @@ class Config:
             self.lipid_entries_absolute = []
         if self.entries is None:
             self.entries = []
+        if not self.protein_params:
+            self.protein_params = {
+                f"R{i + 1:04d}": {"cx": 0.0, "cy": 0.0, "cz": 0.0,
+                                "rx": 0.0, "ry": 0.0, "rz": 0.0}
+                for i in range(self.n_systems)
+            }
 
     # --- JSON helpers ---
     def to_json(self, path: str):
