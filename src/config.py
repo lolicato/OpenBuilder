@@ -1,4 +1,4 @@
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 import json
 
 @dataclass
@@ -28,29 +28,8 @@ class Config:
     pdb_path: str = ""
     itp_path: str = ""
 
-    # --- Protein positioning ---
-    # randomize flags
-    randomize_pos: bool = False        # randomise x/y for all systems equally
-    randomize_pos_every: bool = False  # re-randomise x/y for each system
-    randomize_rot: bool = False        # randomise rotation for all systems equally
-    randomize_rot_every: bool = False  # re-randomise rotation for each system
-
-    # manual position (used when randomize_pos is False)
-    cx: float = 0.0
-    cy: float = 0.0
-    cz: float = 0.0
-
-    # z placement strategy
-    z_method: str = "Absolute z position"   # or "Height above Membrane"
-    distance_to_mem: float = 2.0            # nm above upper leaflet
-
-    # manual rotation angles in degrees (used when randomize_rot is False)
-    rx: float = 0.0
-    ry: float = 0.0
-    rz: float = 0.0
-
     # --- Lipids ---
-    lipid_mode: str = ""
+
     membrane_string: str = ""
 
     # save GUI values into Config
@@ -58,7 +37,18 @@ class Config:
     lipid_entries_relative: list = None
     lipid_entries_absolute: list = None
     entries: list = None
-    imported_lipids: list = None
+
+    # --- Protein positioning ---
+    # z placement strategy
+    z_method: str = "Absolute z position"   # or "Height above Membrane"
+    distance_to_mem: float = 2.0     
+    # randomize flags
+    randomize_pos: bool = False        # randomise x/y for all systems equally
+    randomize_pos_every: bool = False  # re-randomise x/y for each system
+    randomize_rot: bool = False        # randomise rotation for all systems equally
+    randomize_rot_every: bool = False  # re-randomise rotation for each system
+    protein_params: dict = field(default_factory=dict, repr=False, compare=False)
+    
 
     def __post_init__(self):
         if self.lipid_entries_relative is None:
@@ -67,13 +57,15 @@ class Config:
             self.lipid_entries_absolute = []
         if self.entries is None:
             self.entries = []
-        if self.imported_lipids is None:
-            self.imported_lipids = []
 
     # --- JSON helpers ---
     def to_json(self, path: str):
+        data = asdict(self)
+        data.pop("lipid_entries_absolute", None)
+        data.pop("lipid_entries_relative", None)
+        data.pop("membrane_string", None)
         with open(path, "w") as f:
-            json.dump(asdict(self), f, indent=4)
+            json.dump(data, f, indent=4)
 
     @classmethod
     def from_json(cls, path: str):

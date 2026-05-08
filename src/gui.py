@@ -254,6 +254,13 @@ class Gui:
             for i, h in enumerate(["Lipid", "RU", "RL", "AU", "AL", "🗑️"]):
                 cols[i].write(h)
 
+            rel_configs = [
+                ("ratioupper", "Ratio of this lipid in the upper leaflet (0–1)"),
+                ("ratiolower", "Ratio of this lipid in the lower leaflet (0–1)"),
+                ("aplupper",   "Area per lipid in the upper leaflet (nm²)"),
+                ("apllower",   "Area per lipid in the lower leaflet (nm²)"),
+            ]
+
             for idx, entry in enumerate(st.session_state.entries_rel):
                 cols = st.columns([2, 1, 1, 1, 1, 1])
                 with cols[0]:
@@ -262,11 +269,12 @@ class Gui:
                         index=availablelipids.index(entry[0]) if entry[0] in availablelipids else 0,
                         key=f"lipid_rel_{idx}",
                     )
-                for i, key in enumerate(["ratioupper", "ratiolower", "aplupper", "apllower"]):
+                for i, (key, helptext) in enumerate(rel_configs):
                     with cols[i + 1]:
                         entry[1 + i] = st.number_input(
                             key, 0.0, 1.0, entry[1 + i],
                             key=f"{key}_rel_{idx}",
+                            help=helptext,
                         )
                 with cols[5]:
                     st.button("🗑️", key=f"del_rel_{idx}",
@@ -278,6 +286,13 @@ class Gui:
             for i, h in enumerate(["Lipid", "NU", "NL", "AU", "AL", "🗑️"]):
                 cols[i].write(h)
 
+            col_configs = [
+                ("#upper",   "ratioupper", 0,   10000, 1.0,  "Number of lipids in the upper leaflet"),
+                ("#lower",   "ratiolower", 0,   10000, 1.0,  "Number of lipids in the lower leaflet"),
+                ("aplupper", "aplupper",   0.1, 1.0,   0.1,  "Area per lipid in the upper leaflet (nm²)"),
+                ("apllower", "apllower",   0.1, 1.0,   0.1,  "Area per lipid in the lower leaflet (nm²)"),
+            ]
+
             for idx, entry in enumerate(st.session_state.entries_abs):
                 cols = st.columns([2, 1, 1, 1, 1, 1])
                 with cols[0]:
@@ -286,21 +301,16 @@ class Gui:
                         index=availablelipids.index(entry[0]) if entry[0] in availablelipids else 0,
                         key=f"lipid_abs_{idx}",
                     )
-                col_configs = [
-                    ("#upper", "ratioupper", 0,   10000, 1.0),  # (label, key, min, max, step)
-                    ("#lower", "ratiolower", 0,   10000, 1.0),
-                    ("aplupper",    "aplupper",   0.1, 1.0,   0.1),
-                    ("apllower",    "apllower",   0.1, 1.0,   0.1),
-                ]
-                for i, (label, key, mn, mx, step) in enumerate(col_configs):
+                for i, (label, key, mn, mx, step, helptext) in enumerate(col_configs):
                     with cols[i + 1]:
                         entry[1 + i] = st.number_input(
-                            label,                    # ← displayed as "numberupper"
+                            label,
                             min_value=float(mn),
                             max_value=float(mx),
                             value=float(entry[1 + i]),
                             step=step,
-                            key=f"{key}_abs_{idx}",  # ← still "ratioupper_abs_0" etc.
+                            key=f"{key}_abs_{idx}",
+                            help=helptext,
                         )
                 with cols[5]:
                     st.button("🗑️", key=f"del_abs_{idx}",

@@ -17,7 +17,7 @@ def convert_gro_to_pdb(gro_file: str, pdb_file: str) -> Optional[str]:
     except Exception as e:
         st.error(f"Gro→Pdb failed: {e}")
         return None
-def run_coby_simulation(params: dict, protein_line: Optional[str], system_path: str, copy_mdp: bool = True) -> str:
+def run_coby_simulation(params: dict, protein_line: Optional[str], system_path: str) -> str:
     """Combine args and run COBY"""
     
     

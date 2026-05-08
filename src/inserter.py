@@ -26,73 +26,94 @@ class ProteinInserter:
     # ------------------------------------------------------------------
     # Public entry point called by MainBuilder.execute_build
     # ------------------------------------------------------------------
-
-    def insert_protein(self, pdb_path: str, system_path: str, config,
-               system_index: int = 0) -> str:
-
-        # ---- Z placement ------------------------------------------------
-        upper_z_mem = 0.0
-        if config.z_method == "Height above Membrane":
-            upper_z_mem = self._measure_membrane_upper_z(system_path, config)
-            upper_z_mem_nm = upper_z_mem / 10.0
-            cz = upper_z_mem_nm + config.distance_to_mem - config.box_z / 2
-        else:
-            cz = config.cz
-
-        # ---- X/Y position -----------------------------------------------
-        do_random_pos = config.randomize_pos and (
-            config.randomize_pos_every or system_index == 0)
-
-        if do_random_pos:
-            margin = 2.5
-            cx = random.uniform(-(config.box_x / 2 - margin),
-                                config.box_x / 2 - margin)
-            cy = random.uniform(-(config.box_y / 2 - margin),
-                                config.box_y / 2 - margin)
-        else:
-            cx = config.cx
-            cy = config.cy
-
-        # ---- Rotation ---------------------------------------------------
-        if config.n_systems == 1:
-            do_random_rot = config.randomize_rot
-        else:
-            do_random_rot = config.randomize_rot and (
-                config.randomize_rot_every or system_index == 0)
-
-        if do_random_rot:
+    def rotate_protein(self, config, system_index) -> None:
+        """Resolve and write rx, ry, rz into config.protein_params for all systems."""
+        if system_index != 0 and not config.randomize_rot_every:
+            return
+        # if randomize_rot but not every: roll once, reuse for all
+        if config.randomize_rot and not config.randomize_rot_every:
             rx = random.uniform(-180.0, 180.0)
             ry = random.uniform(-180.0, 180.0)
             rz = random.uniform(-180.0, 180.0)
-        else:
-            rx, ry, rz = config.rx, config.ry, config.rz
 
-        # ---- COM-to-bottom offset (only for Height above Membrane) ------
+        for i in range(config.n_systems):
+            protein_key = f"R{i + 1:04d}"
+
+            if config.randomize_rot and config.randomize_rot_every:
+                # new random rotation per system
+                rx = random.uniform(-180.0, 180.0)
+                ry = random.uniform(-180.0, 180.0)
+                rz = random.uniform(-180.0, 180.0)
+            elif not config.randomize_rot:
+                # use whatever is already stored (set from session state earlier)
+                rx = config.protein_params[protein_key]["rx"]
+                ry = config.protein_params[protein_key]["ry"]
+                rz = config.protein_params[protein_key]["rz"]
+
+            config.protein_params[protein_key]["rx"] = round(rx, 4)
+            config.protein_params[protein_key]["ry"] = round(ry, 4)
+            config.protein_params[protein_key]["rz"] = round(rz, 4)
+
+    def position_protein(self, config, system_index) -> None:
+        """Resolve and write cx, cy into config.protein_params for all systems."""
+        margin = 2.5
+        if system_index != 0 and not config.randomize_pos_every:
+            return
+        # if randomize_pos but not every: roll once, reuse for all
+        if config.randomize_pos and not config.randomize_pos_every:
+            cx = random.uniform(-(config.box_x / 2 - margin), config.box_x / 2 - margin)
+            cy = random.uniform(-(config.box_y / 2 - margin), config.box_y / 2 - margin)
+
+        for i in range(config.n_systems):
+            protein_key = f"R{i + 1:04d}"
+
+            if config.randomize_pos and config.randomize_pos_every:
+                # new random position per system
+                cx = random.uniform(-(config.box_x / 2 - margin), config.box_x / 2 - margin)
+                cy = random.uniform(-(config.box_y / 2 - margin), config.box_y / 2 - margin)
+            elif not config.randomize_pos:
+                # use whatever is already stored (set from session state earlier)
+                cx = config.protein_params[protein_key]["cx"]
+                cy = config.protein_params[protein_key]["cy"]
+
+            config.protein_params[protein_key]["cx"] = round(cx, 4)
+            config.protein_params[protein_key]["cy"] = round(cy, 4)
+
+
+    def insert_protein(self, pdb_path: str, system_path: str, config,
+                   system_index: int = 0) -> str:
+
+        protein_key = f"R{system_index + 1:04d}"
+        self.rotate_protein(config, system_index)
+        self.position_protein(config, system_index)
+        params = config.protein_params[protein_key]
+
+        # ---- Z placement ------------------------------------------------
         if config.z_method == "Height above Membrane":
+            upper_z_mem = self._measure_membrane_upper_z(system_path, config)
+
+            cz = upper_z_mem / 10.0 + config.distance_to_mem - config.box_z / 2
+            
+
+            # COM-to-bottom offset
             u = mda.Universe(pdb_path)
             com = u.atoms.center_of_geometry()
-
-            # Rotate exactly as COBY does: Euler XYZ around center of geometry
-            rot = R.from_euler("xyz", [rx, ry, rz], degrees=True)
+            rot = R.from_euler("xyz", [params["rx"], params["ry"], params["rz"]], degrees=True)
             rotated_positions = rot.apply(u.atoms.positions - com) + com
+            com_z_rotated = rotated_positions[:, 2].mean()
+            z_bottom = rotated_positions[:, 2].min()
+            cz += (com_z_rotated - z_bottom) / 10.0
 
-            # Distance from COM to lowest atom after rotation (Ångström → nm)
-            z_rotated = rotated_positions[:, 2]
-            com_z_rotated = rotated_positions[:, 2].mean()  # COM z after rotation
-            z_bottom = z_rotated.min()
-            com_to_bottom_nm = (com_z_rotated - z_bottom) / 10.0
-
-            cz += com_to_bottom_nm
+            params["cz"] = round(cz, 4)
 
         # ---- Build protein line -----------------------------------------
         protein_line = (
-            f"file:{pdb_path} cx:{cx:.4f} cy:{cy:.4f} cz:{cz:.4f}"
-            f" rx:{rx:.4f} ry:{ry:.4f} rz:{rz:.4f}"
+            f"file:{pdb_path} cx:{params['cx']:.4f} cy:{params['cy']:.4f} cz:{params['cz']:.4f}"
+            f" rx:{params['rx']:.4f} ry:{params['ry']:.4f} rz:{params['rz']:.4f}"
             f" moleculetype:Protein"
         )
 
         return protein_line
-
     # ------------------------------------------------------------------
     # Rotation helpers
     # ------------------------------------------------------------------
@@ -163,7 +184,7 @@ class ProteinInserter:
                 "selectedforcefield": config.selected_ff,
                 "itp_input": f"include:toppar/{config.selected_ff}.itp",
             }
-            run_coby_simulation(membrane_params, "", temp_dir, copy_mdp=False)
+            run_coby_simulation(membrane_params, "", temp_dir)
             membrane_gro = os.path.join(temp_dir, "system.gro")
             return self._measure_membrane_z(membrane_gro, config)
         except Exception as e:
@@ -180,7 +201,7 @@ class ProteinInserter:
 
 
             lipid_names = [entry[0] for entry in
-                               config.lipid_entries_relative]
+                               config.entries]
 
 
             if not lipid_names:

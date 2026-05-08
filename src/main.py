@@ -76,7 +76,8 @@ class MainBuilder:
         if not self.config.selected_module == "membrane":
             protein_exists = bool(self.config.pdb_path)
             itp_dest = os.path.join(toppar_folder, "protein.itp")
-            shutil.copy2(self.config.itp_path, itp_dest)
+            if os.path.abspath(self.config.itp_path) != os.path.abspath(itp_dest):
+                shutil.copy2(self.config.itp_path, itp_dest)
             self.config.itp_path = itp_dest
         for system_index, system in enumerate(systems):
             #mdp_folder = os.path.join(system, "mdp")
@@ -85,7 +86,8 @@ class MainBuilder:
             if not self.config.selected_module == "membrane":
                 pdb_dest = os.path.join(system, "protein.pdb")
                 
-                shutil.copy2(self.config.pdb_path, pdb_dest)
+                if os.path.abspath(self.config.pdb_path) != os.path.abspath(pdb_dest):
+                    shutil.copy2(self.config.pdb_path, pdb_dest)
                 
                 self.config.pdb_path = pdb_dest
                 

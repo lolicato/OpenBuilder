@@ -129,12 +129,7 @@ class MembraneBuilder:
 
     def create_membrane_str(self):
         """Create the COBY input string to generate the membrane."""
-
         def lipid_param(lip):
-            imported_lipids = getattr(self.config, "imported_lipids", [])
-
-            if lip in imported_lipids:
-                return "params:IMPORTED:Charge:lib"
             if len(lip) == 4 and lip[-2] == "P":
                 return "params:TOP"
             elif len(lip) == 3 and lip[-2:] == "SM":
