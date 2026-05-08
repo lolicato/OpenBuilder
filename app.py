@@ -32,19 +32,25 @@ class OpenBuilderApp:
         build  = self.gui.run()
         if build:
             self.config.selected_module = st.session_state.selected_module
+            self.config.n_systems = st.session_state.n_systems
             if not st.session_state.selected_module == "membrane":
-                self.config.cx = float(st.session_state.get("cx") or 0.0)
-                self.config.cy = float(st.session_state.get("cy") or 0.0)
-                self.config.cz = float(st.session_state.get("cz") or 0.0)
-                self.config.z_method = st.session_state.get("z_method", "Absolute z position")
-                self.config.distance_to_mem = float(st.session_state.get("distance_to_mem") or 2.0)
-                self.config.rx = float(st.session_state.get("rx") or 0.0)
-                self.config.ry = float(st.session_state.get("ry") or 0.0)
-                self.config.rz = float(st.session_state.get("rz") or 0.0)
                 self.config.randomize_pos = st.session_state.get("randomize_pos", False)
                 self.config.randomize_pos_every = st.session_state.get("randomize_pos_every", False)
                 self.config.randomize_rot = st.session_state.get("randomize_rot", False)
                 self.config.randomize_rot_every = st.session_state.get("randomize_rot_every", False)
+                self.config.protein_params = {}
+                for i in range(self.config.n_systems):
+                    protein_key = f"R{i + 1:04d}"
+                    self.config.protein_params[protein_key] = {
+                        "cx": round(float(st.session_state.get("cx") or 0.0), 4),
+                        "cy": round(float(st.session_state.get("cy") or 0.0), 4),
+                        "cz": round(float(st.session_state.get("cz") or 0.0), 4),
+                        "rx": round(float(st.session_state.get("rx") or 0.0), 4),
+                        "ry": round(float(st.session_state.get("ry") or 0.0), 4),
+                        "rz": round(float(st.session_state.get("rz") or 0.0), 4),
+                    }
+                self.config.z_method = st.session_state.get("z_method", "Absolute z position")
+                self.config.distance_to_mem = float(st.session_state.get("distance_to_mem") or 2.0)
 
 
             self.config.box_x = st.session_state.box_x
@@ -98,7 +104,7 @@ class OpenBuilderApp:
                 shutil.copy2(self.config.itp_path, itp_new)
                 self.config.itp_path = itp_new
 
-            self.config.n_systems = st.session_state.n_systems
+            
 
 
 
