@@ -23,6 +23,9 @@ nav:
   - CLI Usage: cli.md
   - JSON Config: json-config.md
   - Output Structure: outputs.md
+  - Citation: citation.md
+  - Contributing: contributing.md
+  - License: license.md
 
 plugins:
   - search

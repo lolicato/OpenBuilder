@@ -86,7 +86,7 @@ class Gui:
         st.session_state.outputname = st.sidebar.text_input(
             "📁 Output folder name",
             value="",
-            key="output_name"
+            key="output_name",
         )
     def select_forcefield_input(self):
         '''Looks for available forcefields and presents them in a dropdown menu'''
@@ -118,7 +118,7 @@ class Gui:
     
     def n_systems_input(self):
         '''Input for number of systems'''
-        self.config.n_systems = st.sidebar.number_input("🔄 Systems", 1, 99, 1)
+        self.config.n_systems = st.sidebar.number_input("🔄 Systems", 1, 99, 1, help="Number of independent systems to create and process")
         st.session_state.n_systems = self.config.n_systems
 
     def cg_protein_upload_input(self):
@@ -127,7 +127,7 @@ class Gui:
         temp_dir = f"./temp_uploads-{random_name}"
         os.makedirs(temp_dir, exist_ok=True)
         
-        self.config.pdb_file = st.sidebar.file_uploader("🧬 PDB", type="pdb")
+        self.config.pdb_file = st.sidebar.file_uploader("🧬 PDB", type="pdb", help="Upload a PDB file containing the coarse-grained protein structure")
         if self.config.pdb_file is not None:
             
             pdb_path = os.path.join(f"./temp_uploads-{random_name}", self.config.pdb_file.name)
@@ -257,8 +257,8 @@ class Gui:
             rel_configs = [
                 ("ratioupper", "Ratio of this lipid in the upper leaflet (0–1)"),
                 ("ratiolower", "Ratio of this lipid in the lower leaflet (0–1)"),
-                ("aplupper",   "Area per lipid in the upper leaflet (nm²)"),
-                ("apllower",   "Area per lipid in the lower leaflet (nm²)"),
+                ("aplupper",   "Area per lipid in the upper leaflet (nm²); larger values correspond to lower membrane compactness"),
+                ("apllower",   "Area per lipid in the lower leaflet (nm²); larger values correspond to lower membrane compactness"),
             ]
 
             for idx, entry in enumerate(st.session_state.entries_rel):

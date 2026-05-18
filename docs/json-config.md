@@ -10,7 +10,7 @@ This file stores the full build configuration and allows full reproducibility of
 
 ```json
 {
-    "output_name": "outputs/OpenBuilder-2026-05-03_20-00-20",
+    "output_name": "outputs/OpenBuilder-2026-05-15_00-47-52",
     "selected_ff": "martini_v3",
     "base_folder": "",
     "selected_module": "membrane_with_cg_protein",
@@ -18,60 +18,75 @@ This file stores the full build configuration and allows full reproducibility of
     "box_y": 10.0,
     "box_z": 20.0,
     "box_type": "rectangular",
-    "solvation": "solv:W pos:NA neg:CL salt_molarity:0.12",
-    "salt_molarity": 0.12,
-    "n_systems": 3,
-    "pdb_path": "outputs/OpenBuilder-2026-05-03_20-00-20/simulations/R0003/protein.pdb",
-    "itp_path": "outputs/OpenBuilder-2026-05-03_20-00-20/toppar/protein.itp",
+    "solvation": "solv:W pos:NA neg:CL salt_molarity:0.18",
+    "salt_molarity": 0.18,
+    "n_systems": 4,
+    "pdb_path": "outputs/OpenBuilder-2026-05-15_00-47-52/simulations/R0004/protein.pdb",
+    "itp_path": "outputs/OpenBuilder-2026-05-15_00-47-52/toppar/protein.itp",
+    "abs_lip_vals": false,
+    "entries": [
+        [
+            "POPC",
+            0.3,
+            0.25,
+            0.6,
+            0.6
+        ],
+        [
+            "CHOL",
+            0.3,
+            0.5,
+            0.6,
+            0.6
+        ],
+        [
+            "PSM",
+            0.4,
+            0.25,
+            0.6,
+            0.6
+        ]
+    ],
+    "z_method": "Height above Membrane",
+    "distance_to_mem": 2.0,
     "randomize_pos": true,
     "randomize_pos_every": true,
     "randomize_rot": true,
     "randomize_rot_every": true,
-    "cx": 0.0,
-    "cy": 0.0,
-    "cz": 0.0,
-    "z_method": "Height above Membrane",
-    "distance_to_mem": 3.0,
-    "rx": 0.0,
-    "ry": 0.0,
-    "rz": 0.0,
-    "lipid_mode": "",
-    "membrane_string": "grid_maker_grouping_algorithm:no_groups leaflet:upper lipid:POPC:0.5:charge:top:params:TOP:apl:0.6 lipid:BSM:0.5:charge:top:params:TOP:apl:0.6 leaflet:lower lipid:POPC:1.0:charge:top:params:TOP:apl:0.6",
-    "abs_lip_vals": false,
-    "lipid_entries_relative": [
-        [
-            "POPC",
-            0.5,
-            1.0,
-            0.6,
-            0.6
-        ],
-        [
-            "BSM",
-            0.5,
-            0.0,
-            0.6,
-            0.6
-        ]
-    ],
-    "lipid_entries_absolute": [],
-    "entries": [
-        [
-            "POPC",
-            0.5,
-            1.0,
-            0.6,
-            0.6
-        ],
-        [
-            "BSM",
-            0.5,
-            0.0,
-            0.6,
-            0.6
-        ]
-    ],
-    "imported_lipids": []
+    "protein_params": {
+        "R0001": {
+            "cx": -0.2634,
+            "cy": -0.3105,
+            "cz": 5.5903,
+            "rx": 140.6176,
+            "ry": 154.579,
+            "rz": -117.2219
+        },
+        "R0002": {
+            "cx": 1.7503,
+            "cy": 0.6474,
+            "cz": 5.9287,
+            "rx": 72.6335,
+            "ry": -121.346,
+            "rz": -131.9327
+        },
+        "R0003": {
+            "cx": -1.6669,
+            "cy": 1.3716,
+            "cz": 5.8229,
+            "rx": 17.8925,
+            "ry": -115.151,
+            "rz": 177.4764
+        },
+        "R0004": {
+            "cx": -0.9433,
+            "cy": -1.1002,
+            "cz": 5.914,
+            "rx": -169.1105,
+            "ry": 45.0814,
+            "rz": -55.516
+        }
+    }
 }
 ```
 
