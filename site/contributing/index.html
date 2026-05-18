@@ -13,10 +13,10 @@
       
       
       
-        <link rel="prev" href="../installation/">
+        <link rel="prev" href="../citation/">
       
       
-        <link rel="next" href="../cli/">
+        <link rel="next" href="../license/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>GUI Usage - OpenBuilder</title>
+        <title>Contributing - OpenBuilder</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#gui-usage" class="md-skip">
+        <a href="#contributing-to-openbuilder" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              GUI Usage
+              Contributing
             
           </span>
         </div>
@@ -235,11 +235,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="./" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../gui/" class="md-tabs__link">
         
   
   
@@ -332,9 +330,11 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="../contributing/" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
         
   
   
@@ -457,37 +457,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    GUI Usage
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../gui/" class="md-nav__link">
         
   
   
@@ -503,70 +476,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#what-you-can-configure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🧭 What you can configure
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#build-process" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🚀 Build Process
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#protein-input-files" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🧬 Protein Input Files
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#output-summary" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        📦 Output Summary
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -683,10 +592,19 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../contributing/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -702,6 +620,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -753,58 +672,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#what-you-can-configure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🧭 What you can configure
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#build-process" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🚀 Build Process
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#protein-input-files" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🧬 Protein Input Files
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#output-summary" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        📦 Output Summary
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -820,48 +687,67 @@
 
 
 
-<h1 id="gui-usage">GUI Usage<a class="headerlink" href="#gui-usage" title="Permanent link">&para;</a></h1>
-<p>OpenBuilder can be launched using Streamlit:</p>
-<div class="highlight"><pre><span></span><code>streamlit<span class="w"> </span>run<span class="w"> </span>app.py
-</code></pre></div>
+<h1 id="contributing-to-openbuilder">Contributing to OpenBuilder<a class="headerlink" href="#contributing-to-openbuilder" title="Permanent link">&para;</a></h1>
+<p>OpenBuilder is an open-source community-driven platform focused on reproducible, extensible, and collaborative scientific workflows and infrastructure.</p>
+<p>We welcome contributions from developers, researchers, testers, and designers.</p>
 <hr />
-<h2 id="what-you-can-configure">🧭 What you can configure<a class="headerlink" href="#what-you-can-configure" title="Permanent link">&para;</a></h2>
-<p>The GUI allows you to configure:</p>
+<h1 id="ways-to-contribute">Ways to Contribute<a class="headerlink" href="#ways-to-contribute" title="Permanent link">&para;</a></h1>
+<p>Contributions can broadly be divided into two categories:</p>
+<h2 id="1-testing-and-validation">1. Testing and Validation<a class="headerlink" href="#1-testing-and-validation" title="Permanent link">&para;</a></h2>
+<p>Testing is a critical part of the project and includes:</p>
 <ul>
-<li>System type (membrane or membrane + protein)  </li>
-<li>Box size  </li>
-<li>Martini force field  </li>
-<li>Membrane composition  </li>
-<li>Solvation and salt molarity  </li>
-<li>Number of replicas (systems)  </li>
-<li>Protein input files  </li>
-<li>Protein placement and rotation  </li>
+<li>bug reporting</li>
+<li>workflow validation</li>
+<li>benchmarking</li>
+<li>documentation improvements</li>
+<li>reproducibility checks</li>
+<li>platform compatibility testing</li>
+<li>usability feedback</li>
+</ul>
+<p>Scientific software quality strongly depends on rigorous testing and validation from the community.</p>
+<hr />
+<h2 id="2-module-and-feature-development">2. Module and Feature Development<a class="headerlink" href="#2-module-and-feature-development" title="Permanent link">&para;</a></h2>
+<p>We also welcome technical contributions such as:</p>
+<ul>
+<li>new modules</li>
+<li>workflow integrations</li>
+<li>UI/UX improvements</li>
+<li>API integrations</li>
+<li>visualization components</li>
+<li>documentation systems</li>
+<li>deployment tooling</li>
+</ul>
+<p>The project is designed to evolve modularly, and community-developed components are highly encouraged.</p>
+<hr />
+<h1 id="academic-contribution-and-authorship">Academic Contribution and Authorship<a class="headerlink" href="#academic-contribution-and-authorship" title="Permanent link">&para;</a></h1>
+<p>OpenBuilder is developed with an open-science philosophy.</p>
+<p>Major contributors to the project may be recognized through authorship in associated academic manuscripts and preprints, depending on the scope and significance of their contributions.</p>
+<h2 id="living-preprint-model">Living Preprint Model<a class="headerlink" href="#living-preprint-model" title="Permanent link">&para;</a></h2>
+<p>The project aims to maintain a continuously updated preprint accompanying major releases of the platform.</p>
+<p>For each major release:</p>
+<ul>
+<li>contributors may be acknowledged or included as co-authors</li>
+<li>release-specific contributions may be documented</li>
+<li>major technical and scientific advancements may be summarized</li>
+</ul>
+<p>This creates a transparent and evolving record of community contributions.</p>
+<hr />
+<h1 id="future-journal-submission">Future Journal Submission<a class="headerlink" href="#future-journal-submission" title="Permanent link">&para;</a></h1>
+<p>As the platform matures and stabilizes, we plan to submit an associated manuscript to a peer-reviewed scientific journal (e.g. methods- or infrastructure-oriented journals).</p>
+<p>The goal is to establish OpenBuilder as:</p>
+<ul>
+<li>a robust scientific platform</li>
+<li>a reproducible open framework</li>
+<li>a sustainable community-driven infrastructure</li>
 </ul>
 <hr />
-<h2 id="build-process">🚀 Build Process<a class="headerlink" href="#build-process" title="Permanent link">&para;</a></h2>
-<p>Press the <strong>BUILD</strong> button to generate your systems.</p>
-<p>This will create a project folder:</p>
-<div class="highlight"><pre><span></span><code>outputs/&lt;project_name&gt;/
-</code></pre></div>
-<p>and automatically generate a downloadable ZIP archive.</p>
-<hr />
-<h2 id="protein-input-files">🧬 Protein Input Files<a class="headerlink" href="#protein-input-files" title="Permanent link">&para;</a></h2>
-<p>For protein-containing systems, upload:</p>
+<h1 id="how-to-get-involved">How to Get Involved<a class="headerlink" href="#how-to-get-involved" title="Permanent link">&para;</a></h1>
+<p>If you would like to contribute, collaborate, or discuss ideas, please contact us at:</p>
+<p>dev@open-builder.com</p>
+<p>Please include:</p>
 <ul>
-<li>A coarse-grained <code>.pdb</code> file  </li>
-<li>The corresponding <code>.itp</code> topology file  </li>
-</ul>
-<p>These files are copied into:</p>
-<div class="highlight"><pre><span></span><code>user_inputs/
-</code></pre></div>
-<p>inside the output project folder, ensuring the build is fully reproducible.</p>
-<hr />
-<h2 id="output-summary">📦 Output Summary<a class="headerlink" href="#output-summary" title="Permanent link">&para;</a></h2>
-<p>After building, you will have:</p>
-<ul>
-<li>A complete project folder inside <code>outputs/</code>  </li>
-<li>A ZIP archive in <code>downloads/</code>  </li>
-<li>All inputs and configuration stored for reuse  </li>
+<li>your background/interests</li>
+<li>areas you would like to contribute to</li>
 </ul>
 
 
