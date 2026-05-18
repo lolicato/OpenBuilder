@@ -1,11 +1,11 @@
-# 🚀 OpenBuilder-v1.0.3-dev
+# 🚀 OpenBuilder-v1.1.0
 
-![Version](https://img.shields.io/badge/version-v1.0.3--dev-red)
+![Version](https://img.shields.io/badge/version-v1.1.0-green)
 ![Python](https://img.shields.io/badge/python-3.10-blue)
 ![Status](https://img.shields.io/badge/status-active-success)
 
 🌐 **📖 Documentation:** https://lolicato.github.io/OpenBuilder  
-👉 *Full user guide, tutorials, and API reference available online*
+👉 *Full user guide, and API reference available online*
 
 ---
 
@@ -51,7 +51,7 @@ GUI → Config → Build → config.json → ZIP → CLI reuse
 
 
 ```bash
-git clone -b development https://github.com/lolicato/OpenBuilder.git
+git clone https://github.com/lolicato/OpenBuilder.git
 cd OpenBuilder
 ```
 
@@ -59,7 +59,7 @@ cd OpenBuilder
 
 ```bash
 conda env create -f environment.yml
-conda activate OpenBuilder-dev
+conda activate OpenBuilder
 ```
 
 ---
