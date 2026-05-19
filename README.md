@@ -1,108 +1,170 @@
-# OpenBuilder v1.0.2
+# 🚀 OpenBuilder-v1.1.0
 
-OpenBuilder is a **web interface for COBY** designed specifically for building (and in the future analyzing) **MARTINI coarse-grained molecular simulations**.
+![Version](https://img.shields.io/badge/version-v1.1.0-green)
+![Python](https://img.shields.io/badge/python-3.10-blue)
+![Status](https://img.shields.io/badge/status-active-success)
 
-Built with **Python**, **MDAnalysis**, and **Streamlit**, OpenBuilder aims to make simulation system preparation, analysis, and visualization more accessible through an intuitive web interface, without sacrificing reproducibility or local control.
+🌐 **📖 Documentation:** https://lolicato.github.io/OpenBuilder  
+👉 *Full user guide, and API reference available online*
+
+---
+
+**OpenBuilder** is a modern **GUI + CLI toolkit for building MARTINI coarse-grained membrane and membrane–protein systems**, powered by COBY.
+
+It combines:
+- 🧬 **MDAnalysis** for structure handling  
+- ⚙️ **COBY** for system generation  
+- 🌐 **Streamlit** for an interactive GUI  
+
+with a strong focus on **reproducibility**, **usability**, and **local execution**.
+
+---
+
+## 🖼️ Interface
 
 ![Application GUI](./pictures/GUI.png)
 
 ---
 
-## Features and Future Directions
+## ✨ Features
 
-- Interactive web interface powered by Streamlit  
-- System preparation workflows built on COBY  
-- Local-first execution model  
-- Future hosted deployment at **open-builder.com**
+- 🧪 Build membrane and membrane–protein systems  
+- 🎛️ Fully interactive Streamlit GUI  
+- 🧾 Automatic **JSON-based reproducibility**  
+- 💻 Command-line interface (CLI) for batch workflows  
+- 📦 Self-contained outputs with input files included  
+- 🔁 Multi-replica system generation  
 
 ---
 
-## Installation
+## 🧭 Workflow
 
-We recommend installing OpenBuilder using the provided Conda environment.
+```text
+GUI → Config → Build → config.json → ZIP → CLI reuse
+```
 
-### Download repository
+---
+
+## 📦 Installation
+
+### Clone the Development version
+
+
 ```bash
 git clone https://github.com/lolicato/OpenBuilder.git
 cd OpenBuilder
 ```
 
-### Create the environment
+### Create environment
 
 ```bash
 conda env create -f environment.yml
-```
-
-### Activate the environment
-
-```bash
 conda activate OpenBuilder
 ```
 
 ---
 
-## Running OpenBuilder
+## 🚀 Usage
 
-Launch the local web interface with:
+### GUI mode
 
 ```bash
 streamlit run app.py
 ```
 
-Your browser should automatically open the application.
-On the first run and initial build, startup and execution may take longer as Python compiles source files into .pyc bytecode and caches dependencies, improving performance for subsequent runs.
+---
+
+### CLI mode
+
+```bash
+python app.py --no-gui config.json
+```
 
 ---
 
-## Requirements
+## 📁 Output Structure
 
-Main dependencies include:
+Each build creates a self-contained project:
 
-- Python 3.10  
-- COBY  
-- MDAnalysis  
-- NumPy  
-- Pandas  
-- SciPy  
-- Scikit-learn  
-- Streamlit  
+```text
+outputs/OpenBuilder-xxxx/
+├── config.json
+├── user_inputs/
+├── simulations/
+├── toppar/
+└── mdp/
+```
 
-Additional packages may be installed through pip where required.
+✔ Fully reproducible  
+✔ Ready for simulation  
+✔ ZIP archive generated automatically  
 
 ---
 
-## Contributing
+## 🔁 Reproducibility
+
+Every build generates:
+
+```text
+config.json
+```
+
+This allows:
+
+- exact rebuilds  
+- parameter editing  
+- automated workflows  
+
+---
+
+## 📚 Documentation
+
+👉 **Online docs (recommended):**  
+https://lolicato.github.io/OpenBuilder  
+
+👉 Local preview:
+
+```bash
+mkdocs serve
+```
+
+---
+
+## 🤝 Contributing
 
 We welcome:
 
 - Bug reports  
 - Feature requests  
-- Documentation improvements (creation) 
-- Pull requests  
-- New simulation workflows  
-
-If you'd like to help shape OpenBuilder, feel free to open an issue or contact us directly.
+- Documentation improvements  
+- New workflows  
 
 ---
 
-## License
+## 📄 Licensing
 
-This software is currently available for academic and personal use only.
+    OpenBuilder is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 
-Modification, redistribution, forks, or derivative works are not permitted without prior written permission from the authors.
+    Copyright (C) 2026  Fabio Lolicato
 
-The project will be released under an open-source license after publication of the first associated research paper.
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-See the LICENSE file for full details.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
 
 ---
 
-## Acknowledgements
+## 🙏 Acknowledgements
 
-OpenBuilder builds on the work of incredible open-source communities:
+OpenBuilder builds upon:
 
 - COBY  
 - MDAnalysis  
 - Streamlit  
-- NumPy  
-- SciPy  
+- NumPy / SciPy  
+

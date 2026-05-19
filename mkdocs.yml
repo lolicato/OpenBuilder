@@ -1,0 +1,46 @@
+site_name: OpenBuilder
+site_description: GUI and CLI builder for Martini coarse-grained membrane/protein systems
+site_author: Fabio
+repo_name: OpenBuilder
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - content.tabs.link
+  palette:
+    - scheme: default
+      primary: red
+      accent: red
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - GUI Usage: gui.md
+  - CLI Usage: cli.md
+  - JSON Config: json-config.md
+  - Output Structure: outputs.md
+  - Citation: citation.md
+  - Contributing: contributing.md
+  - License: license.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths:
+            - src
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true

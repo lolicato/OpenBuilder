@@ -6,10 +6,18 @@ dependencies:
   - python=3.10
   - pip
 
+  - numpy=1.26
+  - scipy=1.11
+  - pandas
+  - biopython
+  - networkx
+
   - pip:
-      - coby==1.0.11
+      - coby==1.0.13
       - mdanalysis==2.9.0
-      - numpy==2.2.6
-      - scipy==1.15.3
       - streamlit==1.56.0
       - streamlit-molstar==0.4.21
+      - watchdog
+      - mkdocs
+      - mkdocs-material
+      - mkdocstrings-python 

@@ -7,8 +7,6 @@ from config import *
 
 
 
-
-
 class MartiniLipidParser:
     
     def __init__(self, toppardir: str = "toppar"):
@@ -129,13 +127,9 @@ class MembraneBuilder:
 
         
 
-
-    
     def create_membrane_str(self):
-        """Create the COBY input string to generate the membrane, uses the session state created by the gui/app"""
+        """Create the COBY input string to generate the membrane."""
         def lipid_param(lip):
-            if lip in st.session_state.get("imported_lipids", []):
-                return "params:IMPORTED:Charge:lib"
             if len(lip) == 4 and lip[-2] == "P":
                 return "params:TOP"
             elif len(lip) == 3 and lip[-2:] == "SM":
@@ -143,29 +137,34 @@ class MembraneBuilder:
             else:
                 return "params:default"
 
-        entries = st.session_state.get("entries")
-        if not st.session_state.abs_lip_vals:
+        entries = self.config.entries
+
+        if not self.config.abs_lip_vals:
             upper_string = "leaflet:upper " + " ".join([
                 f"lipid:{lip}:{upper}:charge:top:{lipid_param(lip)}:apl:{apl}"
-                for lip, upper, _, apl, _ in entries if float(upper) > 0
+                for lip, upper, _, apl, _ in entries
+                if float(upper) > 0
             ])
-            
-            
+
             lower_string = "leaflet:lower " + " ".join([
                 f"lipid:{lip}:{lower}:charge:top:{lipid_param(lip)}:apl:{apl}"
-                for lip, _, lower, _, apl in entries if float(lower) > 0
+                for lip, _, lower, _, apl in entries
+                if float(lower) > 0
             ])
+
         else:
-            upper_string = "leaflet:upper " + "lipid_optim:abs_val " + " ".join([
+            upper_string = "leaflet:upper lipid_optim:abs_val " + " ".join([
                 f"lipid:{lip}:{upper}:charge:top:{lipid_param(lip)}:apl:{apl}"
-                for lip, upper, _, apl, _ in entries if float(upper) > 0
+                for lip, upper, _, apl, _ in entries
+                if float(upper) > 0
             ])
-            
-            
-            lower_string = "leaflet:lower " + "lipid_optim:abs_val " + " ".join([
+
+            lower_string = "leaflet:lower lipid_optim:abs_val " + " ".join([
                 f"lipid:{lip}:{lower}:charge:top:{lipid_param(lip)}:apl:{apl}"
-                for lip, _, lower, _, apl in entries if float(lower) > 0
+                for lip, _, lower, _, apl in entries
+                if float(lower) > 0
             ])
+
         membrane_string = f"grid_maker_grouping_algorithm:no_groups {upper_string} {lower_string}"
         self.config.membrane_string = membrane_string
         return membrane_string

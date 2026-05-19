@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict, field
+import json
 
 @dataclass
 class Config:
@@ -27,29 +28,53 @@ class Config:
     pdb_path: str = ""
     itp_path: str = ""
 
+    # --- Lipids ---
+
+    membrane_string: str = ""
+
+    # save GUI values into Config
+    abs_lip_vals: bool = False
+    lipid_entries_relative: list = None
+    lipid_entries_absolute: list = None
+    entries: list = None
+
     # --- Protein positioning ---
+    # z placement strategy
+    z_method: str = "Absolute z position"   # or "Height above Membrane"
+    distance_to_mem: float = 2.0     
     # randomize flags
     randomize_pos: bool = False        # randomise x/y for all systems equally
     randomize_pos_every: bool = False  # re-randomise x/y for each system
     randomize_rot: bool = False        # randomise rotation for all systems equally
     randomize_rot_every: bool = False  # re-randomise rotation for each system
+    protein_params: dict = field(default_factory=dict, repr=False, compare=False)
+    
 
-    # manual position (used when randomize_pos is False)
-    cx: float = 0.0
-    cy: float = 0.0
-    cz: float = 0.0
+    def __post_init__(self):
+        if self.lipid_entries_relative is None:
+            self.lipid_entries_relative = []
+        if self.lipid_entries_absolute is None:
+            self.lipid_entries_absolute = []
+        if self.entries is None:
+            self.entries = []
+        if not self.protein_params:
+            self.protein_params = {
+                f"R{i + 1:04d}": {"cx": 0.0, "cy": 0.0, "cz": 0.0,
+                                "rx": 0.0, "ry": 0.0, "rz": 0.0}
+                for i in range(self.n_systems)
+            }
 
-    # z placement strategy
-    z_method: str = "Absolute z position"   # or "Height above Membrane"
-    distance_to_mem: float = 2.0            # nm above upper leaflet
+    # --- JSON helpers ---
+    def to_json(self, path: str):
+        data = asdict(self)
+        data.pop("lipid_entries_absolute", None)
+        data.pop("lipid_entries_relative", None)
+        data.pop("membrane_string", None)
+        with open(path, "w") as f:
+            json.dump(data, f, indent=4)
 
-    # manual rotation angles in degrees (used when randomize_rot is False)
-    rx: float = 0.0
-    ry: float = 0.0
-    rz: float = 0.0
-
-
-    # --- Lipids ---
-    lipid_mode: str = ""
-    membrane_string: str = ""
-
+    @classmethod
+    def from_json(cls, path: str):
+        with open(path, "r") as f:
+            data = json.load(f)
+        return cls(**data)

@@ -22,13 +22,11 @@ class MainBuilder:
         self.inserter         = ProteinInserter()
         self.filemanager      = FileManager()
 
-    def execute_build(self, selected_module: str, base_folder: str, config=None):
+    def execute_build(self, selected_module: str, base_folder: str, config=None, gui=True):
         if config is not None:
             self.config = config  
         os.makedirs(base_folder, exist_ok=True)
         
-
-        self.config.solvation = st.session_state.solvation
 
         # Build the list of per-system folders up front
         systems = []
@@ -59,6 +57,7 @@ class MainBuilder:
         # Step 2 – Build shared params dict (same for all systems)
         # ------------------------------------------------------------------
         itp_input_ff = f"include:toppar/{self.config.selected_ff}.itp"
+        self.builder.config = self.config
         self.config.membrane_string = self.builder.create_membrane_str()
         params = {
             "boxx":              float(self.config.box_x),
@@ -75,9 +74,10 @@ class MainBuilder:
         # ------------------------------------------------------------------
         mdp_folder = os.path.join(base_folder, "mdp")
         if not self.config.selected_module == "membrane":
-            protein_exists = bool(st.session_state.get("pdb_path"))
+            protein_exists = bool(self.config.pdb_path)
             itp_dest = os.path.join(toppar_folder, "protein.itp")
-            shutil.copy2(st.session_state.itp_path, itp_dest)
+            if os.path.abspath(self.config.itp_path) != os.path.abspath(itp_dest):
+                shutil.copy2(self.config.itp_path, itp_dest)
             self.config.itp_path = itp_dest
         for system_index, system in enumerate(systems):
             #mdp_folder = os.path.join(system, "mdp")
@@ -86,7 +86,8 @@ class MainBuilder:
             if not self.config.selected_module == "membrane":
                 pdb_dest = os.path.join(system, "protein.pdb")
                 
-                shutil.copy2(st.session_state.pdb_path, pdb_dest)
+                if os.path.abspath(self.config.pdb_path) != os.path.abspath(pdb_dest):
+                    shutil.copy2(self.config.pdb_path, pdb_dest)
                 
                 self.config.pdb_path = pdb_dest
                 
@@ -128,27 +129,39 @@ class MainBuilder:
                         else os.path.join(system, "system.gro"))
 
             if not os.path.exists(gro_path):
-                st.warning(f"No final structure found in: {system}")
+                if gui:
+                    st.warning(f"No final structure found in: {system}")
+                else:
+                    print(f"No final structure found in: {system}")
                 continue
 
             pdb_path = convert_gro_to_pdb(
                 gro_path, gro_path.replace(".gro", ".pdb"))
-            if pdb_path and os.path.exists(pdb_path):
+            if gui and pdb_path and os.path.exists(pdb_path):
                 with st.expander(
-                    f"🧬 System {system_index+1} – "
-                    f"{os.path.basename(system)}",
-                        expanded=system_index < 2):
+                    f"🧬 System {system_index+1} – {os.path.basename(system)}",
+                    expanded=system_index < 2
+                ):
                     st_molstar(pdb_path, height=400)
         
+        json_path = os.path.join(self.config.output_name, "config.json")
+        self.config.to_json(json_path)
         zip_path = self.filemanager.create_zip_folder(base_folder)
-        try:
-            with open(zip_path, "rb") as f:
-                st.download_button(
-                    label=(f"💾 Download {os.path.basename(base_folder)}.zip "
-                            f"({os.path.getsize(zip_path)/1e6:.1f} MB)"),
-                    data=f.read(),
-                    file_name=f"{base_folder}.zip",
-                    mime="application/zip",
-                )
-        except FileNotFoundError:
-            st.warning(f"ZIP not found for {system}")
+
+
+        if gui:
+            try:
+                with open(zip_path, "rb") as f:
+                    st.download_button(
+                        label=f"💾 Download {os.path.basename(base_folder)}.zip",
+                        data=f.read(),
+                        file_name=f"{os.path.basename(base_folder)}.zip",
+                        mime="application/zip",
+                    )
+            except FileNotFoundError:
+                st.warning(f"ZIP not found")
+        else:
+            print(f"ZIP created: {zip_path}")
+
+
+        
