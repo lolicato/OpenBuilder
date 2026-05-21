@@ -46,3 +46,8 @@ class FileManager():
         zip_path = zip_base.with_suffix('.zip')
         return str(zip_path)
     
+    def copy_userinput(self, file_path, user_inputs_dir):
+        '''copies a given user input to its destination and assigns the new path'''
+        new_file_path = os.path.join(user_inputs_dir, os.path.basename(file_path))
+        shutil.copy2(file_path, new_file_path)
+        return new_file_path

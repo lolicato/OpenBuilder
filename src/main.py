@@ -26,104 +26,96 @@ class MainBuilder:
         if config is not None:
             self.config = config  
         os.makedirs(base_folder, exist_ok=True)
-        
-
-        # Build the list of per-system folders up front
-        systems = []
 
         simulations_folder = os.path.join(base_folder, "simulations")
         os.makedirs(simulations_folder, exist_ok=True)
-
-        for i in range(self.config.n_systems):
-            folder = os.path.join(simulations_folder, f"R{i+1:04d}")  # 
-            os.makedirs(folder, exist_ok=True)
-            systems.append(folder)
+        if not gui:
+            self.initialize_building()
 
         # ------------------------------------------------------------------
-        # Step 1 – Copy FF and MDP files
+        # Step 1 – Copy FF and MDP files (once, shared across all templates)
         # ------------------------------------------------------------------
         toppar_folder = os.path.join(base_folder, "toppar")
         os.makedirs(toppar_folder, exist_ok=True)
-        for system_folder in systems:
-            self.filemanager.copy_ff_folder(self.config.selected_ff,
-                                            toppar_folder)
-            #if self.config.run_eq:
-            mdp_target = ("protein" if "protein" in selected_module
-                              else "membrane")
-            self.filemanager.copy_mdp_files(
-                self.config.selected_ff, base_folder, mdp_target)
+        self.filemanager.copy_ff_folder(self.config.selected_ff, toppar_folder)
+        mdp_target = "protein" if "protein" in selected_module else "membrane"
+        self.filemanager.copy_mdp_files(self.config.selected_ff, base_folder, mdp_target)
 
-        # ------------------------------------------------------------------
-        # Step 2 – Build shared params dict (same for all systems)
-        # ------------------------------------------------------------------
-        itp_input_ff = f"include:toppar/{self.config.selected_ff}.itp"
-        self.builder.config = self.config
-        self.config.membrane_string = self.builder.create_membrane_str()
-        params = {
-            "boxx":              float(self.config.box_x),
-            "boxy":              float(self.config.box_y),
-            "boxz":              float(self.config.box_z),
-            "box_type":          self.config.box_type,
-            "membrane":          self.config.membrane_string,
-            "solvation":         self.config.solvation,
-            "selectedforcefield": self.config.selected_ff,
-        }
+        # Determine templates to iterate — config.entries is always a dict now
+        templates = self.config.entries  # {name: entries_list}
 
-        # ------------------------------------------------------------------
-        # Step 3 – Per-system pipeline
-        # ------------------------------------------------------------------
-        mdp_folder = os.path.join(base_folder, "mdp")
-        if not self.config.selected_module == "membrane":
-            protein_exists = bool(self.config.pdb_path)
-            itp_dest = os.path.join(toppar_folder, "protein.itp")
-            if os.path.abspath(self.config.itp_path) != os.path.abspath(itp_dest):
-                shutil.copy2(self.config.itp_path, itp_dest)
-            self.config.itp_path = itp_dest
-        for system_index, system in enumerate(systems):
-            #mdp_folder = os.path.join(system, "mdp")
+        all_systems = []
 
-            # Copy protein files into this system folder
+        for template_name, entries in templates.items():
+            self.config.entries_current = entries  # temp flat entries for this iteration
+
+            systems = []
+            suffix = f"{template_name}_" if template_name != "single_setup" else ""
+
+            for i in range(self.config.n_systems):
+                folder_name = f"{suffix}R{i+1:04d}"
+                folder = os.path.join(simulations_folder, folder_name)
+                os.makedirs(folder, exist_ok=True)
+                systems.append(folder)
+
+
+            # --------------------------------------------------------------
+            # Step 2 – Build shared params dict for this template
+            # --------------------------------------------------------------
+            itp_input_ff = f"include:toppar/{self.config.selected_ff}.itp"
+            self.builder.config = self.config
+            self.config.membrane_string = self.builder.create_membrane_str()
+            params = {
+                "boxx":               float(self.config.box_x),
+                "boxy":               float(self.config.box_y),
+                "boxz":               float(self.config.box_z),
+                "box_type":           self.config.box_type,
+                "membrane":           self.config.membrane_string,
+                "solvation":          self.config.solvation,
+                "selectedforcefield": self.config.selected_ff,
+            }
+
+            # --------------------------------------------------------------
+            # Step 3 – Per-system pipeline
+            # --------------------------------------------------------------
             if not self.config.selected_module == "membrane":
-                pdb_dest = os.path.join(system, "protein.pdb")
-                
-                if os.path.abspath(self.config.pdb_path) != os.path.abspath(pdb_dest):
-                    shutil.copy2(self.config.pdb_path, pdb_dest)
-                
-                self.config.pdb_path = pdb_dest
-                
+                itp_dest = os.path.join(toppar_folder, "protein.itp")
+                if os.path.abspath(self.config.itp_path) != os.path.abspath(itp_dest):
+                    shutil.copy2(self.config.itp_path, itp_dest)
+                self.config.itp_path = itp_dest
 
-                # Include paths for COBY (FF + protein ITP)
-                itp_input_protein = f"include:{itp_dest}"
-                params["itp_input"] = [itp_input_ff, itp_input_protein]
+            for system_index, system in enumerate(systems):
+                if not self.config.selected_module == "membrane":
+                    pdb_dest = os.path.join(system, "protein.pdb")
+                    if os.path.abspath(self.config.pdb_path) != os.path.abspath(pdb_dest):
+                        shutil.copy2(self.config.pdb_path, pdb_dest)
+                    self.config.pdb_path = pdb_dest
 
-                # ---- Rotation / placement -----------------------------------
-                protein_line = self.inserter.insert_protein(
-                    pdb_dest, system, self.config,
-                    system_index=system_index)
+                    itp_input_protein = f"include:{itp_dest}"
+                    params["itp_input"] = [itp_input_ff, itp_input_protein]
 
+                    protein_line = self.inserter.insert_protein(
+                        pdb_dest, system, self.config,
+                        system_index=system_index)
 
+                    self.topologyeditor.overwrite_moleculetype_line(
+                        self.config.itp_path)
+                else:
+                    protein_line = ""
+                    params["itp_input"] = [itp_input_ff]
 
-                # ---- Topology fix-up ----------------------------------------
-                self.topologyeditor.overwrite_moleculetype_line(
-                    self.config.itp_path)
-            else:
-                protein_line =""
-                params["itp_input"] = [itp_input_ff]
+                coby_output = run_coby_simulation(params, protein_line, system)
+                self.topologyeditor.edit_topology(self.config.selected_ff, system)
+                if not self.config.selected_module == "membrane":
+                    self.topologyeditor.fix_protein_includes_only(
+                        os.path.join(coby_output, "topol.top"))
 
-
-            # ---- Run COBY -----------------------------------------------
-            coby_output = run_coby_simulation(params, protein_line, system)
-            self.topologyeditor.edit_topology(self.config.selected_ff, system)
-            if not self.config.selected_module =="membrane":
-                self.topologyeditor.fix_protein_includes_only(
-                    os.path.join(coby_output, "topol.top"))
-
-            
+            all_systems.extend(systems)
 
         # ------------------------------------------------------------------
-        # Step 4 – Package / visualise
+        # Step 4 – Package / visualise (over all systems from all templates)
         # ------------------------------------------------------------------
-        for system_index, system in enumerate(systems):
+        for system_index, system in enumerate(all_systems):
             gro_candidate = os.path.join(system, "eq3.gro")
             gro_path = (gro_candidate if os.path.exists(gro_candidate)
                         else os.path.join(system, "system.gro"))
@@ -142,12 +134,11 @@ class MainBuilder:
                     f"🧬 System {system_index+1} – {os.path.basename(system)}",
                     expanded=system_index < 2
                 ):
-                    st_molstar(pdb_path, height=400)
-        
+                    st_molstar(pdb_path, height=400, key=f"molstar_{os.path.basename(system)}")
+
         json_path = os.path.join(self.config.output_name, "config.json")
         self.config.to_json(json_path)
         zip_path = self.filemanager.create_zip_folder(base_folder)
-
 
         if gui:
             try:
@@ -164,4 +155,36 @@ class MainBuilder:
             print(f"ZIP created: {zip_path}")
 
 
-        
+    def initialize_building(self):
+
+
+        outputs_dir = Path("outputs")
+        outputs_dir.mkdir(parents=True, exist_ok=True)
+
+        self.builder.setup_lipids(self.config.selected_ff)
+        ff_key = f"{self.config.selected_ff}.itp"
+        available_lipids = self.parser.lipidmap.get(ff_key, [])
+        if self.config.template_active:
+            self.config.entries = self.builder.load_membrane_template_from_csv(
+                self.config.template_path, available_lipids
+            )
+                
+        else:
+            raw = (self.config.lipid_entries_absolute
+                if self.config.abs_lip_vals
+                else self.config.lipid_entries_relative)
+            self.config.entries = {"default": raw}
+
+
+        os.makedirs(self.config.output_name, exist_ok=True)
+        user_inputs_dir = os.path.join(self.config.output_name, "user_inputs")
+        os.makedirs(user_inputs_dir, exist_ok=True)    
+        if self.config.pdb_path and os.path.exists(self.config.pdb_path):
+            new_pdb_path = self.filemanager.copy_userinput(self.config.pdb_path, user_inputs_dir)
+            self.config.pdb_path = new_pdb_path
+        if self.config.itp_path and os.path.exists(self.config.itp_path):
+            new_itp_path = self.filemanager.copy_userinput(self.config.itp_path, user_inputs_dir)
+            self.config.itp_path = new_itp_path
+        if self.config.template_path and os.path.exists(self.config.template_path):
+            new_template_path = self.filemanager.copy_userinput(self.config.template_path, user_inputs_dir)
+            self.config.template_path = new_template_path

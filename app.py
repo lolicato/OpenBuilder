@@ -64,7 +64,8 @@ class OpenBuilderApp:
             )
 
 
-
+            self.config.template_active = st.session_state.template_active
+            self.config.template_path = st.session_state.get("template_path")
             self.config.abs_lip_vals = st.session_state.get("abs_lip_vals", False)
             self.config.lipid_entries_relative = st.session_state.get("lipid_entries_relative", [])
             self.config.lipid_entries_absolute = st.session_state.get("lipid_entries_absolute", [])
@@ -78,13 +79,20 @@ class OpenBuilderApp:
                 folder_name = f"{main_folder_name}-{st.session_state.output_name}"
             else:
                 folder_name = main_folder_name
-
+            self.builder.setup_lipids(self.config.selected_ff)
+            ff_key = f"{self.config.selected_ff}.itp"
+            available_lipids = self.parser.lipidmap.get(ff_key, [])
             self.config.output_name = str(outputs_dir / folder_name)
-
-            if self.config.abs_lip_vals:
-                self.config.entries = self.config.lipid_entries_absolute
+            if self.config.template_active:
+                self.config.entries = self.builder.load_membrane_template_from_csv(
+                    self.config.template_path, available_lipids
+                )
+                self.config.entries = st.session_state.membrane_entries  # always a dict now
             else:
-                self.config.entries = self.config.lipid_entries_relative
+                raw = (self.config.lipid_entries_absolute
+                    if self.config.abs_lip_vals
+                    else self.config.lipid_entries_relative)
+                self.config.entries = {"default": raw}
 
             os.makedirs(self.config.output_name, exist_ok=True)
             user_inputs_dir = os.path.join(self.config.output_name, "user_inputs")
@@ -93,45 +101,46 @@ class OpenBuilderApp:
             self.config.selected_ff = st.session_state.get("selected_ff", "martini_v3")
             self.config.pdb_path = st.session_state.get("pdb_path", "")
             self.config.itp_path = st.session_state.get("itp_path", "")
+            self.config.template_path = st.session_state.get("template_path")
             # Move uploaded files into project folder
             if self.config.pdb_path and os.path.exists(self.config.pdb_path):
-                pdb_new = os.path.join(user_inputs_dir, os.path.basename(self.config.pdb_path))
-                shutil.copy2(self.config.pdb_path, pdb_new)
-                self.config.pdb_path = pdb_new
-
+                new_pdb_path = self.filemanager.copy_userinput(self.config.pdb_path, user_inputs_dir)
+                self.config.pdb_path = new_pdb_path
             if self.config.itp_path and os.path.exists(self.config.itp_path):
-                itp_new = os.path.join(user_inputs_dir, os.path.basename(self.config.itp_path))
-                shutil.copy2(self.config.itp_path, itp_new)
-                self.config.itp_path = itp_new
-
+                new_itp_path = self.filemanager.copy_userinput(self.config.itp_path, user_inputs_dir)
+                self.config.itp_path = new_itp_path
+            if self.config.template_path and os.path.exists(self.config.template_path):
+                new_template_path = self.filemanager.copy_userinput(self.config.template_path, user_inputs_dir)
+                self.config.template_path = new_template_path
             
 
 
 
             try:        
                 if self.config.entries:
-                    entries = self.config.entries
-                    upper_sum = sum(float(entry[1]) for entry in entries if len(entry) > 1)
-                    lower_sum = sum(float(entry[2]) for entry in entries if len(entry) > 2)
-                    if not self.config.abs_lip_vals:
-                        if abs(upper_sum - 1.0) > 0.01:
-                            st.error(f"❌ UPPER leaflet sum {upper_sum:.3f} ≠ 1.0")
-                            st.stop()
-                        if abs(lower_sum - 1.0) > 0.01:
-                            st.error(f"❌ LOWER leaflet sum {lower_sum:.3f} ≠ 1.0")
-                            st.stop()
-                    else:
-                        if abs(upper_sum - round(upper_sum)) > 0.01:
-                            st.error(f"❌ UPPER leaflet sum {upper_sum:.3f} is not an integer")
-                            st.stop()
-                        if abs(lower_sum - round(lower_sum)) > 0.01:
-                            st.error(f"❌ LOWER leaflet sum {lower_sum:.3f} is not an integer")
-                            st.stop()
-
+                    for membrane_name, entries in self.config.entries.items():
+                        upper_sum = sum(float(e[1]) for e in entries if len(e) > 1)
+                        lower_sum = sum(float(e[2]) for e in entries if len(e) > 2)
+                        label = f"[{membrane_name}] " if membrane_name != "single_setup" else ""
+                        if not self.config.abs_lip_vals:
+                            if abs(upper_sum - 1.0) > 0.01:
+                                st.error(f"❌ {label}UPPER leaflet sum {upper_sum:.3f} ≠ 1.0")
+                                st.stop()
+                            if abs(lower_sum - 1.0) > 0.01:
+                                st.error(f"❌ {label}LOWER leaflet sum {lower_sum:.3f} ≠ 1.0")
+                                st.stop()
+                        else:
+                            if abs(upper_sum - round(upper_sum)) > 0.01:
+                                st.error(f"❌ {label}UPPER leaflet sum {upper_sum:.3f} is not an integer")
+                                st.stop()
+                            if abs(lower_sum - round(lower_sum)) > 0.01:
+                                st.error(f"❌ {label}LOWER leaflet sum {lower_sum:.3f} is not an integer")
+                                st.stop()
                 else:
                     st.error("❌ No membrane entries found!")
                     st.stop()
-                
+
+
                 self.mainbuilder.execute_build(
                     self.config.selected_module,
                     self.config.output_name,

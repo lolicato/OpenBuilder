@@ -32,6 +32,10 @@ class Gui:
         random_number = random.randint(100000, 999999)
         if not "random_name" in st.session_state:
             st.session_state.random_name = f"{timestamp}-{random_number}"
+        st.session_state.template_active = False
+        st.session_state.template_path = ""
+        st.session_state.template_active= False
+        
         
         
         
@@ -50,6 +54,7 @@ class Gui:
         all_lipids = available_lipids
         if not available_lipids and not st.session_state.imported_lipids:
             st.error("No lipids found")
+        self.template_uploaded = self.template_uploader(available_lipids)
         self.streamlitentries(all_lipids)
         self.horizontal_line()
         self.solvation_input()
@@ -57,6 +62,8 @@ class Gui:
         if not st.session_state.selected_module == "membrane":
             self.cg_protein_upload_input()
             self.setup_insertion_params_ui()
+        elif st.session_state.template_active:
+            pass
         else:
             random_name = st.session_state.random_name
             if os.path.exists(f"./temp_uploads-{random_name}"):
@@ -115,7 +122,29 @@ class Gui:
         self.config.salt_molarity = st.sidebar.number_input("🧂 Salt Molarity (M)", 0.0, 2.0, 0.15, key="salt_molarity")
         st.session_state.solvation = f"solv:W pos:{pos_ion} neg:{neg_ion}        salt_molarity:{self.config.salt_molarity}"
         
-    
+    def template_uploader(self, available_lipids):
+        st.subheader("Membrane Template")
+        random_name = st.session_state.random_name
+        temp_dir = f"./temp_uploads-{random_name}"
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        uploaded_template = st.file_uploader("",type="csv", help = """
+        Upload membrane CSV  
+        Style: `resname, ratioupper, ratiolower, aplupper, apllower`  
+        or: `resname, #upper, #lower, aplupper, apllower` → then select absolute numbers  
+        No header, can miss values
+        """)
+        if uploaded_template:
+            st.session_state.template_path = os.path.join(f"./temp_uploads-{random_name}", uploaded_template.name)
+            with open(st.session_state.template_path, "wb") as f:
+                    f.write(uploaded_template.getvalue())
+            
+            membrane_template = self.builder.load_membrane_template_from_csv(st.session_state.template_path, available_lipids)
+            st.session_state.template_active = True
+        
+        else:
+            st.session_state.template_active = False
+        
     def n_systems_input(self):
         '''Input for number of systems'''
         self.config.n_systems = st.sidebar.number_input("🔄 Systems", 1, 99, 1, help="Number of independent systems to create and process")
@@ -247,106 +276,119 @@ class Gui:
         '''Membrane composition input'''
         st.subheader("Membrane Entries")
         st.session_state.abs_lip_vals = st.checkbox("Give absolute lipid values")
+        if not st.session_state.template_active:
 
-        if not st.session_state.abs_lip_vals:
-            # ── RELATIVE RATIO MODE ──────────────────────────────────────────────
-            cols = st.columns([2, 1, 1, 1, 1, 1])
-            for i, h in enumerate(["Lipid", "RU", "RL", "AU", "AL", "🗑️"]):
-                cols[i].write(h)
-
-            rel_configs = [
-                ("ratioupper", "Ratio of this lipid in the upper leaflet (0–1)"),
-                ("ratiolower", "Ratio of this lipid in the lower leaflet (0–1)"),
-                ("aplupper",   "Area per lipid in the upper leaflet (nm²); larger values correspond to lower membrane compactness"),
-                ("apllower",   "Area per lipid in the lower leaflet (nm²); larger values correspond to lower membrane compactness"),
-            ]
-
-            for idx, entry in enumerate(st.session_state.entries_rel):
+            if not st.session_state.abs_lip_vals:
+                # ── RELATIVE RATIO MODE ──────────────────────────────────────────────
                 cols = st.columns([2, 1, 1, 1, 1, 1])
-                with cols[0]:
-                    entry[0] = st.selectbox(
-                        f"Lipid {idx}", availablelipids,
-                        index=availablelipids.index(entry[0]) if entry[0] in availablelipids else 0,
-                        key=f"lipid_rel_{idx}",
-                    )
-                for i, (key, helptext) in enumerate(rel_configs):
-                    with cols[i + 1]:
-                        entry[1 + i] = st.number_input(
-                            key, 0.0, 1.0, entry[1 + i],
-                            key=f"{key}_rel_{idx}",
-                            help=helptext,
-                        )
-                with cols[5]:
-                    st.button("🗑️", key=f"del_rel_{idx}",
-                            on_click=self._delete_entry, args=(idx,))
+                for i, h in enumerate(["Lipid", "RU", "RL", "AU", "AL", "🗑️"]):
+                    cols[i].write(h)
 
+                rel_configs = [
+                    ("ratioupper", "Ratio of this lipid in the upper leaflet (0–1)"),
+                    ("ratiolower", "Ratio of this lipid in the lower leaflet (0–1)"),
+                    ("aplupper",   "Area per lipid in the upper leaflet (nm²); larger values correspond to lower membrane compactness"),
+                    ("apllower",   "Area per lipid in the lower leaflet (nm²); larger values correspond to lower membrane compactness"),
+                ]
+
+                for idx, entry in enumerate(st.session_state.entries_rel):
+                    cols = st.columns([2, 1, 1, 1, 1, 1])
+                    with cols[0]:
+                        entry[0] = st.selectbox(
+                            f"Lipid {idx}", availablelipids,
+                            index=availablelipids.index(entry[0]) if entry[0] in availablelipids else 0,
+                            key=f"lipid_rel_{idx}",
+                        )
+                    for i, (key, helptext) in enumerate(rel_configs):
+                        with cols[i + 1]:
+                            entry[1 + i] = st.number_input(
+                                key, 0.0, 1.0, entry[1 + i],
+                                key=f"{key}_rel_{idx}",
+                                help=helptext,
+                            )
+                    with cols[5]:
+                        st.button("🗑️", key=f"del_rel_{idx}",
+                                on_click=self._delete_entry, args=(idx,))
+
+            else:
+                # ── ABSOLUTE COUNT MODE ──────────────────────────────────────────────
+                cols = st.columns([2, 1, 1, 1, 1, 1])
+                for i, h in enumerate(["Lipid", "NU", "NL", "AU", "AL", "🗑️"]):
+                    cols[i].write(h)
+
+                col_configs = [
+                    ("#upper",   "ratioupper", 0,   10000, 1.0,  "Number of lipids in the upper leaflet"),
+                    ("#lower",   "ratiolower", 0,   10000, 1.0,  "Number of lipids in the lower leaflet"),
+                    ("aplupper", "aplupper",   0.1, 1.0,   0.1,  "Area per lipid in the upper leaflet (nm²)"),
+                    ("apllower", "apllower",   0.1, 1.0,   0.1,  "Area per lipid in the lower leaflet (nm²)"),
+                ]
+
+                for idx, entry in enumerate(st.session_state.entries_abs):
+                    cols = st.columns([2, 1, 1, 1, 1, 1])
+                    with cols[0]:
+                        entry[0] = st.selectbox(
+                            f"Lipid {idx}", availablelipids,
+                            index=availablelipids.index(entry[0]) if entry[0] in availablelipids else 0,
+                            key=f"lipid_abs_{idx}",
+                        )
+                    for i, (label, key, mn, mx, step, helptext) in enumerate(col_configs):
+                        with cols[i + 1]:
+                            entry[1 + i] = st.number_input(
+                                label,
+                                min_value=float(mn),
+                                max_value=float(mx),
+                                value=float(entry[1 + i]),
+                                step=step,
+                                key=f"{key}_abs_{idx}",
+                                help=helptext,
+                            )
+                    with cols[5]:
+                        st.button("🗑️", key=f"del_abs_{idx}",
+                                on_click=self._delete_entry, args=(idx,))
+
+            # ── Add button ───────────────────────────────────────────────────────────
+            st.button("Add lipid",
+                    on_click=self._add_entry,
+                    args=(availablelipids[0] if availablelipids else "POPC",))
+
+            # ── Build snapshot session states ────────────────────────────────────────
+            entries_rel = st.session_state.entries_rel
+            if all(f"lipid_rel_{idx}" in st.session_state for idx in range(len(entries_rel))):
+                st.session_state.lipid_entries_relative = [
+                    [
+                        st.session_state[f"lipid_rel_{idx}"],
+                        st.session_state[f"ratioupper_rel_{idx}"],
+                        st.session_state[f"ratiolower_rel_{idx}"],
+                        st.session_state[f"aplupper_rel_{idx}"],
+                        st.session_state[f"apllower_rel_{idx}"],
+                    ]
+                    for idx in range(len(entries_rel))
+                ]
+
+            entries_abs = st.session_state.entries_abs
+            if all(f"lipid_abs_{idx}" in st.session_state for idx in range(len(entries_abs))):
+                st.session_state.lipid_entries_absolute = [
+                    [
+                        st.session_state[f"lipid_abs_{idx}"],
+                        st.session_state[f"ratioupper_abs_{idx}"],
+                        st.session_state[f"ratiolower_abs_{idx}"],
+                        st.session_state[f"aplupper_abs_{idx}"],
+                        st.session_state[f"apllower_abs_{idx}"],
+                    ]
+                    for idx in range(len(entries_abs))
+                ]
         else:
-            # ── ABSOLUTE COUNT MODE ──────────────────────────────────────────────
-            cols = st.columns([2, 1, 1, 1, 1, 1])
-            for i, h in enumerate(["Lipid", "NU", "NL", "AU", "AL", "🗑️"]):
-                cols[i].write(h)
-
-            col_configs = [
-                ("#upper",   "ratioupper", 0,   10000, 1.0,  "Number of lipids in the upper leaflet"),
-                ("#lower",   "ratiolower", 0,   10000, 1.0,  "Number of lipids in the lower leaflet"),
-                ("aplupper", "aplupper",   0.1, 1.0,   0.1,  "Area per lipid in the upper leaflet (nm²)"),
-                ("apllower", "apllower",   0.1, 1.0,   0.1,  "Area per lipid in the lower leaflet (nm²)"),
-            ]
-
-            for idx, entry in enumerate(st.session_state.entries_abs):
-                cols = st.columns([2, 1, 1, 1, 1, 1])
-                with cols[0]:
-                    entry[0] = st.selectbox(
-                        f"Lipid {idx}", availablelipids,
-                        index=availablelipids.index(entry[0]) if entry[0] in availablelipids else 0,
-                        key=f"lipid_abs_{idx}",
-                    )
-                for i, (label, key, mn, mx, step, helptext) in enumerate(col_configs):
-                    with cols[i + 1]:
-                        entry[1 + i] = st.number_input(
-                            label,
-                            min_value=float(mn),
-                            max_value=float(mx),
-                            value=float(entry[1 + i]),
-                            step=step,
-                            key=f"{key}_abs_{idx}",
-                            help=helptext,
-                        )
-                with cols[5]:
-                    st.button("🗑️", key=f"del_abs_{idx}",
-                            on_click=self._delete_entry, args=(idx,))
-
-        # ── Add button ───────────────────────────────────────────────────────────
-        st.button("Add lipid",
-                on_click=self._add_entry,
-                args=(availablelipids[0] if availablelipids else "POPC",))
-
-        # ── Build snapshot session states ────────────────────────────────────────
-        entries_rel = st.session_state.entries_rel
-        if all(f"lipid_rel_{idx}" in st.session_state for idx in range(len(entries_rel))):
-            st.session_state.lipid_entries_relative = [
-                [
-                    st.session_state[f"lipid_rel_{idx}"],
-                    st.session_state[f"ratioupper_rel_{idx}"],
-                    st.session_state[f"ratiolower_rel_{idx}"],
-                    st.session_state[f"aplupper_rel_{idx}"],
-                    st.session_state[f"apllower_rel_{idx}"],
-                ]
-                for idx in range(len(entries_rel))
-            ]
-
-        entries_abs = st.session_state.entries_abs
-        if all(f"lipid_abs_{idx}" in st.session_state for idx in range(len(entries_abs))):
-            st.session_state.lipid_entries_absolute = [
-                [
-                    st.session_state[f"lipid_abs_{idx}"],
-                    st.session_state[f"ratioupper_abs_{idx}"],
-                    st.session_state[f"ratiolower_abs_{idx}"],
-                    st.session_state[f"aplupper_abs_{idx}"],
-                    st.session_state[f"apllower_abs_{idx}"],
-                ]
-                for idx in range(len(entries_abs))
-            ]
+            st.info("📄 Membrane composition loaded from template. Please select 'Give absolute lipid values' if the numbers in the template are absolute.")
+            cols = st.columns([2, 1, 1, 1, 1])
+            for i, h in enumerate(["Lipid", "RU", "RL", "AU", "AL"]):
+                cols[i].write(f"**{h}**")
+            for entry in st.session_state.lipid_template:
+                cols = st.columns([2, 1, 1, 1, 1])
+                cols[0].write(entry[0])
+                cols[1].write(entry[1])
+                cols[2].write(entry[2])
+                cols[3].write(entry[3])
+                cols[4].write(entry[4])
 
 
 
