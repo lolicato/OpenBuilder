@@ -1,6 +1,7 @@
 import os
 import re
 import streamlit as st
+import pandas as pd
 from typing import List, Dict, Optional
 from pathlib import Path
 from config import *
@@ -89,18 +90,6 @@ class MartiniLipidParser:
         self.lipidmap[ff_file] = sorted(fflipids)
         return self.lipidmap[ff_file]
     
-    def getsidebarff(self) -> Optional[str]:
-        ffs = self.discoverforcefields()
-        if not ffs:
-            st.sidebar.warning("Keine .itp in toppar/")
-            return None
-        selectedff = st.sidebar.selectbox("Forcefield wählen", ffs)
-        if selectedff not in self.lipidmap:
-            self.scanfflipids(selectedff)
-        lipids = self.lipidmap.get(selectedff + ".itp", [])
-        st.sidebar.metric("Lipide", len(lipids))
-        st.sidebar.code(", ".join(lipids), language="ini")
-        return selectedff
 
 
 class MembraneBuilder:
@@ -108,6 +97,136 @@ class MembraneBuilder:
         self.parser = parser
         self.entries = []
         self.config = Config()
+    
+    def load_membrane_template_from_csv(self, uploaded_file, available_lipids: list):
+        try:
+            with open(uploaded_file, "r", encoding="utf-8") as f:
+                content = f.read()
+        except Exception as e:
+            st.error(f"Could not read CSV file: {e}")
+            return
+
+        # --- Split into named blocks by lines starting with '#' ---
+        blocks = {}
+        current_name = "__default__"
+        current_lines = []
+
+        for line in content.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                # Save previous block if it has content
+                if current_lines:
+                    blocks[current_name] = current_lines
+                current_name = stripped.lstrip("#").strip()
+                current_lines = []
+            elif stripped:  # skip blank lines
+                current_lines.append(stripped)
+
+        # Save the last block
+        if current_lines:
+            blocks[current_name] = current_lines
+
+        if not blocks:
+            st.error("CSV file appears to be empty.")
+            return
+
+        # --- Parse each block independently ---
+        parsed_templates = {}
+
+        for name, lines in blocks.items():
+            df = self._parse_membrane_block(lines, available_lipids, block_name=name)
+            if df is None:
+                return  # Error already reported via st.error inside helper
+            parsed_templates[name] = df.to_dict(orient="records")
+
+        # --- Store results ---
+        # Rename internal sentinel to the public "default" key
+        if "__default__" in parsed_templates:
+            parsed_templates["single_setup"] = parsed_templates.pop("__default__")
+
+        # Always store as dict {name: entries}
+        entries_dict = {
+            name: self._records_to_entries(records)
+            for name, records in parsed_templates.items()
+        }
+        st.session_state.membrane_entries = entries_dict  # single source of truth
+
+        # Expose first template for display in the UI editor
+        first_entries = next(iter(entries_dict.values()))
+        st.session_state.membrane_template = next(iter(parsed_templates.values()))  # records, for display
+        st.session_state.lipid_template = first_entries  # legacy display key
+
+        return entries_dict
+
+
+    def _parse_membrane_block(self, lines: list[str], available_lipids: list, block_name: str) -> pd.DataFrame | None:
+        """Parse a list of CSV lines into a validated membrane DataFrame."""
+        from io import StringIO
+        try:
+            df = pd.read_csv(StringIO("\n".join(lines)), header=None)
+        except Exception as e:
+            st.error(f"Could not parse block '{block_name}': {e}")
+            raise ValueError (f"Could not parse block '{block_name}': {e}")
+            
+
+        n_cols = len(df.columns)
+
+        if n_cols == 3:
+            df.columns = ["resname", "upper leaflet ratio", "lower leaflet ratio"]
+            df["upper leaflet apl"] = 0.6
+            df["lower leaflet apl"] = 0.6
+
+        elif n_cols == 5:
+            df.columns = [
+                "resname",
+                "upper leaflet ratio",
+                "lower leaflet ratio",
+                "upper leaflet apl",
+                "lower leaflet apl",
+            ]
+            df["upper leaflet ratio"] = df["upper leaflet ratio"].fillna(0)
+            df["lower leaflet ratio"] = df["lower leaflet ratio"].fillna(0)
+            df["upper leaflet apl"] = df["upper leaflet apl"].fillna(0.6)
+            df["lower leaflet apl"] = df["lower leaflet apl"].fillna(0.6)
+
+        else:
+            st.error(
+                f"Block '{block_name}': unexpected number of columns ({n_cols}). "
+                f"CSV must have 3 columns (resname, upper ratio, lower ratio) "
+                f"or 5 columns (+ upper APL, lower APL)."
+            )
+            raise ValueError (
+                f"Block '{block_name}': unexpected number of columns ({n_cols}). "
+                f"CSV must have 3 columns (resname, upper ratio, lower ratio) "
+                f"or 5 columns (+ upper APL, lower APL)."
+            )
+            
+
+        # --- Validate resnames ---
+        for resname in df["resname"]:
+            if resname not in available_lipids:
+                st.error(
+                    f"Block '{block_name}': lipid '{resname}' is not available. "
+                    f"Please check your composition."
+                )
+                raise ValueError (
+                    f"Block '{block_name}': lipid '{resname}' is not available. "
+                    f"Please check your composition."
+                )
+                
+
+        return df
+
+
+    def _records_to_entries(self,records: list[dict]) -> list[list]:
+        """Convert list of membrane record dicts to the legacy list-of-lists format."""
+        return [
+            [r["resname"], r["upper leaflet ratio"], r["lower leaflet ratio"],
+            r["upper leaflet apl"], r["lower leaflet apl"]]
+            for r in records
+        ]
+
+
     
 
     
@@ -137,7 +256,7 @@ class MembraneBuilder:
             else:
                 return "params:default"
 
-        entries = self.config.entries
+        entries = self.config.entries_current
 
         if not self.config.abs_lip_vals:
             upper_string = "leaflet:upper " + " ".join([

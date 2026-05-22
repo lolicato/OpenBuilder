@@ -29,7 +29,8 @@ class Config:
     itp_path: str = ""
 
     # --- Lipids ---
-
+    template_active: bool = False
+    template_path: str =""
     membrane_string: str = ""
 
     # save GUI values into Config
