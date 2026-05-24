@@ -11,19 +11,18 @@
 ; 20-30 fs timestep.
 ; Time steps smaller than 20 fs are not required unless specifically stated in the itp file.
 
-
 integrator               = md
-dt                       = 0.01
-nsteps                   = 50000
+dt                       = 0.02
+nsteps                   = 250000000  ; 5 us
 
 
 
 nstxout                  = 0
 nstvout                  = 0
 nstfout                  = 0
-nstlog                   = 25000
-nstenergy                = 25000
-nstxout-compressed       = 25000
+nstlog                   = 25000 ; 0.5 ns
+nstenergy                = 25000 ; 0.5 ns
+nstxout-compressed       = 50000 ; 1 ns
 compressed-x-precision   = 100
 compressed-x-grps        =
 energygrps               = System
@@ -95,11 +94,11 @@ rvdw                     = 1.1
 ; coupling should be done semiisotropic.
 
 tcoupl                   = v-rescale
-tc-grps                  = MEMB SOLV_ION
+tc-grps                  = SOLU SOLV
 tau_t                    = 1.0 1.0
 ref_t                    = 310 310
 
-gen_vel                  = no ;yes
+gen_vel                  = no
 gen_temp                 = 310
 gen_seed                 = -1
 
@@ -123,12 +122,12 @@ tau_p                    = 4.0
 ref_p                    = 1.0 1.0
 compressibility          = 3e-4 3e-4 
 
-refcoord-scaling         = all
+refcoord_scaling         = all
 
 ; Center of mass removal
 comm-mode                = Linear
 nstcomm                  = 100
-comm-grps                = MEMB SOLV_ION
+comm-grps                = SOLU SOLV
 
 ; MARTINI and CONSTRAINTS
 ; for ring systems and stiff bonds constraints are defined

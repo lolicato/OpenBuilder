@@ -17,7 +17,7 @@ class Gui:
         self.config = Config()
         self.ffmanager = ForceFieldManager()
         self.topologyeditor = TopologyEditor()
-        self.parser = MartiniLipidParser(Path("toppar"))
+        self.parser = MartiniLipidParser(Path("resources/toppar"))
         self.builder = MembraneBuilder(self.parser)
         self.inserter = ProteinInserter()
         st.session_state.cx = ""
@@ -45,7 +45,7 @@ class Gui:
         self.create_layout()
         self.choose_module()
         self.create_folder_name_input()
-        self.config.forcefields = self.ffmanager.get_forcefield_names("toppar")
+        self.config.forcefields = self.ffmanager.get_forcefield_names("resources/toppar")
         self.select_forcefield_input()
         self.box_params()
         self.builder.setup_lipids(self.config.selected_ff)    
@@ -107,7 +107,28 @@ class Gui:
         st.session_state.box_x = col1.number_input("📦 Box X (nm)", 5.0, 50.0, 10.0)
         st.session_state.box_y = col2.number_input("📦 Box Y (nm)", 5.0, 50.0, 10.0)
         st.session_state.box_z = col3.number_input("📦 Box Z (nm)", 5.0, 50.0, 10.0)
-        self.config.box_type = st.sidebar.selectbox("Box Type", ["rectangular"])
+        self.config.box_type = st.sidebar.selectbox(
+            "Box Type",
+            ["rectangular", "hexagonal", "skewed_hexagonal"],
+            key="box_type",
+            help="""
+
+        📦 Box types supported by COBY
+
+        • rectangular (default)
+          - 3 side lengths: X, Y, Z
+          - Angles: xy = xz = yz = 90°
+
+        • hexagonal
+          - 2 side lengths: X, Z
+          - Angles: xy = 60°, xz = yz = 90°
+
+        • skewed hexagonal
+          - 1 side length: X
+          - Angles: xy = xz = yz = 60°
+
+        """
+        )
 
     def horizontal_line(self):
         st.sidebar.markdown("---")

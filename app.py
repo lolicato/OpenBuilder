@@ -21,7 +21,7 @@ class OpenBuilderApp:
         self.config = Config()
         self.ffmanager = ForceFieldManager()
         self.topologyeditor = TopologyEditor()
-        self.parser = MartiniLipidParser(Path("toppar"))
+        self.parser = MartiniLipidParser(Path("resources/toppar"))
         self.builder = MembraneBuilder(self.parser)
         self.inserter = ProteinInserter()
         self.gui = Gui()
@@ -56,6 +56,7 @@ class OpenBuilderApp:
             self.config.box_x = st.session_state.box_x
             self.config.box_y = st.session_state.box_y
             self.config.box_z = st.session_state.box_z
+            self.config.box_type = st.session_state.box_type
             self.config.salt_molarity = float(st.session_state.get("salt_molarity", 0.15))
             self.config.solvation = (
                 f"solv:W pos:{st.session_state.get('pos_ion', 'NA')} "

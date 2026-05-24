@@ -17,7 +17,7 @@ class MainBuilder:
         self.config           = Config()
         self.ffmanager        = ForceFieldManager()
         self.topologyeditor   = TopologyEditor()
-        self.parser           = MartiniLipidParser(Path("toppar"))
+        self.parser           = MartiniLipidParser(Path("resources/toppar"))
         self.builder          = MembraneBuilder(self.parser)
         self.inserter         = ProteinInserter()
         self.filemanager      = FileManager()
@@ -27,8 +27,8 @@ class MainBuilder:
             self.config = config  
         os.makedirs(base_folder, exist_ok=True)
 
-        simulations_folder = os.path.join(base_folder, "simulations")
-        os.makedirs(simulations_folder, exist_ok=True)
+        systems_folder = os.path.join(base_folder, "systems")
+        os.makedirs(systems_folder, exist_ok=True)
         if not gui:
             self.initialize_building()
 
@@ -40,6 +40,7 @@ class MainBuilder:
         self.filemanager.copy_ff_folder(self.config.selected_ff, toppar_folder)
         mdp_target = "protein" if "protein" in selected_module else "membrane"
         self.filemanager.copy_mdp_files(self.config.selected_ff, base_folder, mdp_target)
+        self.filemanager.copy_scripts(base_folder)
 
         # Determine templates to iterate — config.entries is always a dict now
         templates = self.config.entries  # {name: entries_list}
@@ -54,7 +55,7 @@ class MainBuilder:
 
             for i in range(self.config.n_systems):
                 folder_name = f"{suffix}R{i+1:04d}"
-                folder = os.path.join(simulations_folder, folder_name)
+                folder = os.path.join(systems_folder, folder_name)
                 os.makedirs(folder, exist_ok=True)
                 systems.append(folder)
 
@@ -62,7 +63,7 @@ class MainBuilder:
             # --------------------------------------------------------------
             # Step 2 – Build shared params dict for this template
             # --------------------------------------------------------------
-            itp_input_ff = f"include:toppar/{self.config.selected_ff}.itp"
+            itp_input_ff = f"include:resources/toppar/{self.config.selected_ff}.itp"
             self.builder.config = self.config
             self.config.membrane_string = self.builder.create_membrane_str()
             params = {
@@ -164,16 +165,25 @@ class MainBuilder:
         self.builder.setup_lipids(self.config.selected_ff)
         ff_key = f"{self.config.selected_ff}.itp"
         available_lipids = self.parser.lipidmap.get(ff_key, [])
+
         if self.config.template_active:
             self.config.entries = self.builder.load_membrane_template_from_csv(
                 self.config.template_path, available_lipids
             )
                 
         else:
-            raw = (self.config.lipid_entries_absolute
-                if self.config.abs_lip_vals
-                else self.config.lipid_entries_relative)
-            self.config.entries = {"default": raw}
+            # JSON/CLI mode may already contain entries
+            if self.config.entries:
+                if not isinstance(self.config.entries, dict):
+                    self.config.entries = {"default": self.config.entries}
+
+            else:
+                raw = (
+                    self.config.lipid_entries_absolute
+                    if self.config.abs_lip_vals
+                    else self.config.lipid_entries_relative
+                )
+                self.config.entries = {"default": raw}
 
 
         os.makedirs(self.config.output_name, exist_ok=True)

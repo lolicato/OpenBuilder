@@ -20,7 +20,7 @@ class ProteinInserter:
     """
 
     def __init__(self):
-        self.parser  = MartiniLipidParser(Path("toppar"))
+        self.parser  = MartiniLipidParser(Path("resources/toppar"))
         self.builder = MembraneBuilder(self.parser)
 
     # ------------------------------------------------------------------
