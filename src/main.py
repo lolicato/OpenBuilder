@@ -175,7 +175,7 @@ class MainBuilder:
             # JSON/CLI mode may already contain entries
             if self.config.entries:
                 if not isinstance(self.config.entries, dict):
-                    self.config.entries = {"default": self.config.entries}
+                    self.config.entries = {"single_setup": self.config.entries}
 
             else:
                 raw = (
@@ -183,7 +183,7 @@ class MainBuilder:
                     if self.config.abs_lip_vals
                     else self.config.lipid_entries_relative
                 )
-                self.config.entries = {"default": raw}
+                self.config.entries = {"single_setup": raw}
 
 
         os.makedirs(self.config.output_name, exist_ok=True)

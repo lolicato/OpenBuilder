@@ -103,10 +103,6 @@ class Gui:
 
     def box_params(self):
         '''Input for box size and type'''
-        col1, col2, col3 = st.sidebar.columns(3)
-        st.session_state.box_x = col1.number_input("📦 Box X (nm)", 5.0, 50.0, 10.0)
-        st.session_state.box_y = col2.number_input("📦 Box Y (nm)", 5.0, 50.0, 10.0)
-        st.session_state.box_z = col3.number_input("📦 Box Z (nm)", 5.0, 50.0, 10.0)
         self.config.box_type = st.sidebar.selectbox(
             "Box Type",
             ["rectangular", "hexagonal", "skewed_hexagonal"],
@@ -129,6 +125,12 @@ class Gui:
 
         """
         )
+        col1, col2, col3 = st.sidebar.columns(3)
+        st.session_state.box_x = col1.number_input("📦 Box X (nm)", 5.0, 50.0, 10.0)
+        if self.config.box_type == "rectangular":
+            st.session_state.box_y = col2.number_input("📦 Box Y (nm)", 5.0, 50.0, 10.0)
+        if not self.config.box_type == "skewed_hexagonal":
+            st.session_state.box_z = col3.number_input("📦 Box Z (nm)", 5.0, 50.0, 10.0)
 
     def horizontal_line(self):
         st.sidebar.markdown("---")

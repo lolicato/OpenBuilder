@@ -182,7 +182,7 @@ class ProteinInserter:
                 "moleculeimport": "",
                 "solvation": config.solvation,
                 "selectedforcefield": config.selected_ff,
-                "itp_input": f"include:toppar/{config.selected_ff}.itp",
+                "itp_input": f"include:resources/toppar/{config.selected_ff}.itp",
             }
             run_coby_simulation(membrane_params, "", temp_dir)
             membrane_gro = os.path.join(temp_dir, "system.gro")
@@ -201,7 +201,7 @@ class ProteinInserter:
 
 
             lipid_names = [entry[0] for entry in
-                               config.entries]
+                               config.entries_current]
 
 
             if not lipid_names:
