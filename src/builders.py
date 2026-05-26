@@ -10,7 +10,7 @@ from config import *
 
 class MartiniLipidParser:
     
-    def __init__(self, toppardir: str = "toppar"):
+    def __init__(self, toppardir: str = "resources/toppar"):
         self.toppardir = Path(toppardir)
         self.forcefields: List[str] = []
         self.lipidmap: Dict[str, List[str]] = {}

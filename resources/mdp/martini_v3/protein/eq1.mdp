@@ -11,11 +11,9 @@
 ; 20-30 fs timestep.
 ; Time steps smaller than 20 fs are not required unless specifically stated in the itp file.
 
-
 integrator               = md
-dt                       = 0.02
-nsteps                   = 100000
-
+dt                       = 0.005
+nsteps                   = 50000
 
 
 
@@ -96,11 +94,11 @@ rvdw                     = 1.1
 ; coupling should be done semiisotropic.
 
 tcoupl                   = v-rescale
-tc-grps                  = MEMB SOLV_ION PROTEIN
-tau_t                    = 1.0 1.0 1.0
-ref_t                    = 310 310 310
+tc-grps                  = SOLU SOLV
+tau_t                    = 1.0 1.0
+ref_t                    = 310 310
 
-gen_vel                  = no ;yes
+gen_vel                  = yes
 gen_temp                 = 310
 gen_seed                 = -1
 
@@ -118,7 +116,7 @@ gen_seed                 = -1
 ; has been observed due to pressure oscillations. 
 
 ; Pressure coupling     
-Pcoupl                   = c-rescale
+Pcoupl                   = no ;c-rescale
 Pcoupltype               = semiisotropic
 tau_p                    = 4.0 
 ref_p                    = 1.0 1.0
@@ -129,7 +127,7 @@ refcoord-scaling         = all
 ; Center of mass removal
 comm-mode                = Linear
 nstcomm                  = 100
-comm-grps                = MEMB SOLV_ION PROTEIN
+comm-grps                = SOLU SOLV
 
 ; MARTINI and CONSTRAINTS
 ; for ring systems and stiff bonds constraints are defined

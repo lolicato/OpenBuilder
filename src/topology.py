@@ -5,7 +5,7 @@ import streamlit as st
 class TopologyEditor:
     def edit_topology(self, ff_name: str, destination: str):
         topol_file = os.path.join(destination, "topol.top")
-        ff_itp = os.path.join("toppar", f"{ff_name}.itp")
+        ff_itp = os.path.join("resources", "toppar", f"{ff_name}.itp")
 
         if not os.path.exists(ff_itp):
             st.warning(f"{ff_itp} not found")
