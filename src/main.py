@@ -10,14 +10,16 @@ from inserter import ProteinInserter
 from topology import TopologyEditor, ForceFieldManager
 from utils import run_coby_simulation, convert_gro_to_pdb
 from filemanager import FileManager
+from global_info import GlobalInfo
 
 
 class MainBuilder:
     def __init__(self):
+        self.global_info      = GlobalInfo()
         self.config           = Config()
         self.ffmanager        = ForceFieldManager()
         self.topologyeditor   = TopologyEditor()
-        self.parser           = MartiniLipidParser(Path("resources/toppar"))
+        self.parser           = MartiniLipidParser(Path(self.global_info.toppar_folder_path))
         self.builder          = MembraneBuilder(self.parser)
         self.inserter         = ProteinInserter()
         self.filemanager      = FileManager()
@@ -35,7 +37,7 @@ class MainBuilder:
         # ------------------------------------------------------------------
         # Step 1 – Copy FF and MDP files (once, shared across all templates)
         # ------------------------------------------------------------------
-        toppar_folder = os.path.join(base_folder, "toppar")
+        toppar_folder = os.path.join(base_folder, self.global_info.toppar_folder)
         os.makedirs(toppar_folder, exist_ok=True)
         self.filemanager.copy_ff_folder(self.config.selected_ff, toppar_folder)
         mdp_target = "protein" if "protein" in selected_module else "membrane"
@@ -51,7 +53,7 @@ class MainBuilder:
             self.config.entries_current = entries  # temp flat entries for this iteration
 
             systems = []
-            suffix = f"{template_name}_" if template_name != "single_setup" else ""
+            suffix = f"{template_name}_" if template_name != self.global_info.default_template_name else ""
 
             for i in range(self.config.n_systems):
                 folder_name = f"{suffix}R{i+1:04d}"
@@ -63,7 +65,7 @@ class MainBuilder:
             # --------------------------------------------------------------
             # Step 2 – Build shared params dict for this template
             # --------------------------------------------------------------
-            itp_input_ff = f"include:resources/toppar/{self.config.selected_ff}.itp"
+            itp_input_ff = f"include:{self.global_info.toppar_folder_path}/{self.config.selected_ff}.itp"
             self.builder.config = self.config
             self.config.membrane_string = self.builder.create_membrane_str()
             params = {
@@ -175,7 +177,7 @@ class MainBuilder:
             # JSON/CLI mode may already contain entries
             if self.config.entries:
                 if not isinstance(self.config.entries, dict):
-                    self.config.entries = {"single_setup": self.config.entries}
+                    self.config.entries = {f"{self.global_info.default_template_name}": self.config.entries}
 
             else:
                 raw = (
@@ -183,7 +185,7 @@ class MainBuilder:
                     if self.config.abs_lip_vals
                     else self.config.lipid_entries_relative
                 )
-                self.config.entries = {"single_setup": raw}
+                self.config.entries = {f"{self.global_info.default_template_name}": raw}
 
 
         os.makedirs(self.config.output_name, exist_ok=True)

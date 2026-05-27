@@ -61,8 +61,7 @@ def run_coby_simulation(params: dict, protein_line: Optional[str], system_path: 
     if protein_line:
         coby_args["protein"] = protein_line
 
-    print("DEBUG COBY box_type:", box_type)
-    print("DEBUG COBY box:", box)
+
     COBY.COBY(**coby_args)
 
     return system_path

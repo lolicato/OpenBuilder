@@ -90,7 +90,249 @@ class MartiniLipidParser:
         self.lipidmap[ff_file] = sorted(fflipids)
         return self.lipidmap[ff_file]
     
+    def buildlipidmap(self, fffile: str) -> Dict[str, Dict[str, str]]:
+        """
+        Build a detailed resname → lipid info mapping for a given forcefield.
 
+        Follows the same include chain as scanfflipids():
+        fffile.itp → parseincludes() → extractmoleculetypes() filter
+        Only .itp files that pass the lipid-keyword filename filter are parsed.
+
+        Parameters
+        ----------
+        fffile : str
+            Forcefield name without .itp extension (as returned by discoverforcefields()).
+
+        Returns
+        -------
+        Dict[str, Dict[str, str]]
+            Mapping of resname → {resname, moltype, head, linker, tail1, tail2,
+                                tail1_beads, tail2_beads}
+            Also stored in self.detailedlipidmap.
+        """
+
+        # ── Lookup tables ─────────────────────────────────────────────────
+
+        HEADGROUP_MAP = {
+            "PC":   "Phosphatidylcholine (PC)",
+            "PE":   "Phosphatidylethanolamine (PE)",
+            "PG":   "Phosphatidylglycerol (PG)",
+            "PS":   "Phosphatidylserine (PS)",
+            "PA":   "Phosphatidic acid (PA)",
+            "PI":   "Phosphatidylinositol (PI)",
+            "PIP":  "Phosphatidylinositol phosphate (PIP)",
+            "PIP2": "Phosphatidylinositol bisphosphate (PIP2)",
+            "PIP3": "Phosphatidylinositol trisphosphate (PIP3)",
+            "SM":   "Sphingomyelin (SM)",
+            "CER":  "Ceramide",
+            "GLUC": "Glucosylceramide",
+            "GALA": "Galactosylceramide",
+            "LPC":  "Lysophosphatidylcholine (LPC)",
+            "LPE":  "Lysophosphatidylethanolamine (LPE)",
+            "DAG":  "Diacylglycerol (DAG)",
+            "TAG":  "Triacylglycerol (TAG)",
+            "MAG":  "Monoacylglycerol (MAG)",
+            "CHOL": "Cholesterol",
+            "ERG":  "Ergosterol",
+        }
+
+        MOLTYPE_LINKER_MAP = {
+            "phospholipid_ltf":     "Glycerol",
+            "lysophospholipid_ltf": "Glycerol (lyso)",
+            "sphingolipid_ltf":     "Sphingoid base (ceramide-type)",
+            "ceramide_ltf":         "Sphingoid base (ceramide-type)",
+            "glycolipid_ltf":       "Glycerol",
+            "ether_ltf":            "Glycerol (ether-linked)",
+            "plasmalogen_ltf":      "Glycerol (vinyl-ether)",
+            "sterol_ltf":           "Sterol backbone",
+            "diglyceride_ltf":      "Glycerol",
+            "triglyceride_ltf":     "Glycerol",
+            "monoglyceride_ltf":    "Glycerol",
+        }
+
+        MOLTYPE_LABEL_MAP = {
+            "phospholipid_ltf":     "Phospholipid",
+            "lysophospholipid_ltf": "Lysophospholipid",
+            "sphingolipid_ltf":     "Sphingolipid",
+            "ceramide_ltf":         "Ceramide",
+            "glycolipid_ltf":       "Glycolipid",
+            "ether_ltf":            "Ether lipid",
+            "plasmalogen_ltf":      "Plasmalogen",
+            "sterol_ltf":           "Sterol",
+            "diglyceride_ltf":      "Diglyceride",
+            "triglyceride_ltf":     "Triglyceride",
+            "monoglyceride_ltf":    "Monoglyceride",
+        }
+
+        # ── Regex patterns ────────────────────────────────────────────────
+
+        title_pat = re.compile(
+            r';{2,}\s*Martini lipid topology for\s+(.+?)\s+\((\w+)\)',
+            re.IGNORECASE
+        )
+        desc_pat = re.compile(
+            r';\s*Description\s*:\s*\n((?:;[^\n]*\n)+)',
+            re.IGNORECASE
+        )
+        coby_pat = re.compile(
+            r'@COBY\s+moltype:(\S+)\s+head:(\S+)\s+tail1:(\S+)\s+tail2:(\S+)\s+name:(\S+)',
+            re.IGNORECASE
+        )
+
+        # ── Helpers ───────────────────────────────────────────────────────
+
+        def beads_to_acyl(bead_str: str) -> str:
+            if not bead_str:
+                return "Unknown"
+            carbons = len(bead_str) * 4
+            double_bonds = sum(1 for b in bead_str if b in ('D', 'd', 'c', 't', 'T'))
+            prefix = "d" if bead_str[0].lower() == 't' else "C"
+            return f"{prefix}{carbons}:{double_bonds} (est.)"
+
+        def parse_tails_from_title(fragment: str):
+            fragment = fragment.strip()
+
+            # ── di-CXX:Y → both tails identical ──────────────────────────────
+            # Handles: "di-C08:0", "di-C18:1(9c)", "di-C20:4(5c,8c,11c,14c)"
+            di_match = re.match(
+                r'di-[Cc](\d+:\d+(?:\([^)]*\))?)',
+                fragment,
+                re.IGNORECASE
+            )
+            if di_match:
+                tail = "C" + di_match.group(1)   # e.g. C08:0, C18:1(9c)
+                return tail, tail
+
+            # ── Sphingolipid: C(d18:1/12:0) ──────────────────────────────────
+            sphingo = re.match(r'[Cc]\((.*?)\)', fragment)
+            if sphingo:
+                parts = [p.strip() for p in sphingo.group(1).split('/')]
+                t1 = parts[0]
+                t2 = ("C" + parts[1]) if len(parts) > 1 else None
+                return t1, t2
+
+            # ── Standard diacyl: C18:1/22:1 or C18:1(9c)/22:1(13c) ──────────
+            standard = re.match(
+                r'[Cc]?(\d+:\d+(?:\([^)]*\))?)\s*/\s*(\d+:\d+(?:\([^)]*\))?)',
+                fragment
+            )
+            if standard:
+                return "C" + standard.group(1), "C" + standard.group(2)
+
+            # ── Single chain (lyso) ───────────────────────────────────────────
+            single = re.match(r'[Cc](\d+:\d+(?:\([^)]*\))?)', fragment)
+            if single:
+                return "C" + single.group(1), None
+
+            return fragment, None
+
+        def headgroup_from_description(desc_text: str) -> str | None:
+            t = desc_text.lower()
+            keywords = [
+                ("phosphatidylinositol bisphosphate", "Phosphatidylinositol bisphosphate (PIP2)"),
+                ("phosphatidylinositol phosphate",    "Phosphatidylinositol phosphate (PIP)"),
+                ("phosphatidylinositol",              "Phosphatidylinositol (PI)"),
+                ("phosphatidylcholine",               "Phosphatidylcholine (PC)"),
+                ("phosphatidylethanolamine",          "Phosphatidylethanolamine (PE)"),
+                ("phosphatidylglycerol",              "Phosphatidylglycerol (PG)"),
+                ("phosphatidylserine",                "Phosphatidylserine (PS)"),
+                ("phosphatidic acid",                 "Phosphatidic acid (PA)"),
+                ("lysophosphatidylcholine",           "Lysophosphatidylcholine (LPC)"),
+                ("lysophosphatidylethanolamine",      "Lysophosphatidylethanolamine (LPE)"),
+                ("sphingomyelin",                     "Sphingomyelin (SM)"),
+                ("glucosylceramide",                  "Glucosylceramide"),
+                ("galactosylceramide",                "Galactosylceramide"),
+                ("ceramide",                          "Ceramide"),
+                ("ganglioside",                       "Ganglioside"),
+                ("cholesteryl ester",                 "Cholesteryl ester"),
+                ("cholesterol",                       "Cholesterol"),
+                ("ergosterol",                        "Ergosterol"),
+                ("diacylglycerol",                    "Diacylglycerol (DAG)"),
+                ("triacylglycerol",                   "Triacylglycerol (TAG)"),
+                ("monoacylglycerol",                  "Monoacylglycerol (MAG)"),
+                ("ether lipid",                       "Ether lipid"),
+                ("plasmalogen",                       "Plasmalogen"),
+            ]
+            for kw, label in keywords:
+                if kw in t:
+                    return label
+            return None
+
+        def parse_itp_for_lipids(itppath: Path) -> Dict[str, Dict[str, str]]:
+            """Parse a single lipid .itp file and return all resname entries found."""
+            results = {}
+            try:
+                with open(itppath, 'r', errors='ignore') as f:
+                    content = f.read()
+            except Exception:
+                return results
+
+            if "@COBY" not in content:
+                return results
+
+            coby_matches = coby_pat.findall(content)
+
+            # Split into per-lipid blocks on the title comment line
+            blocks = re.split(r'(?=;{2,}\s*Martini lipid topology for\s)', content)
+            block_by_name: Dict[str, str] = {}
+            for block in blocks:
+                m = title_pat.search(block)
+                if m:
+                    block_by_name[m.group(2)] = block
+
+            for moltype_raw, head_raw, tail1_beads, tail2_beads, name in coby_matches:
+                block = block_by_name.get(name, content)
+
+                # Tails
+                tail1_str = tail2_str = None
+                title_m = title_pat.search(block)
+                if title_m:
+                    tail1_str, tail2_str = parse_tails_from_title(title_m.group(1))
+                if not tail1_str:
+                    tail1_str = beads_to_acyl(tail1_beads)
+                if not tail2_str:
+                    tail2_str = beads_to_acyl(tail2_beads) if tail2_beads else "None"
+
+                # Headgroup
+                head_label = None
+                desc_m = desc_pat.search(block)
+                if desc_m:
+                    head_label = headgroup_from_description(desc_m.group(1))
+                if not head_label:
+                    head_label = HEADGROUP_MAP.get(head_raw.upper(), f"Headgroup ({head_raw})")
+
+                # Linker and moltype label
+                linker_label = MOLTYPE_LINKER_MAP.get(
+                    moltype_raw.lower(), f"Unknown ({moltype_raw})"
+                )
+                moltype_label = MOLTYPE_LABEL_MAP.get(moltype_raw.lower(), moltype_raw)
+
+                results[name] = {
+                    "resname":     name,
+                    "moltype":     moltype_label,
+                    "head":        head_label,
+                    "linker":      linker_label,
+                    "tail1":       tail1_str,
+                    "tail2":       tail2_str,
+                    "tail1_beads": tail1_beads,
+                    "tail2_beads": tail2_beads,
+                }
+            return results
+
+        # ── Main: follow the same include chain as scanfflipids() ─────────
+
+        ff_file = fffile + ".itp"
+        includes = self.parseincludes(ff_file)   # reuse existing method
+
+        lipid_detail_map: Dict[str, Dict[str, str]] = {}
+
+        for incpath in includes:
+            # Same filename keyword filter as extractmoleculetypessinglefile()
+            if self.extractmoleculetypes(incpath):
+                lipid_detail_map.update(parse_itp_for_lipids(incpath))
+
+        self.detailedlipidmap = lipid_detail_map
+        return lipid_detail_map
 
 class MembraneBuilder:
     def __init__(self, parser: MartiniLipidParser):
@@ -103,7 +345,7 @@ class MembraneBuilder:
             with open(uploaded_file, "r", encoding="utf-8") as f:
                 content = f.read()
         except Exception as e:
-            st.error(f"Could not read CSV file: {e}")
+            st.error(f"Could not read template file: {e}")
             return
 
         # --- Split into named blocks by lines starting with '#' ---
@@ -112,12 +354,14 @@ class MembraneBuilder:
         current_lines = []
 
         for line in content.splitlines():
+            if ";" in line:
+                line = line[:line.index(";")]
             stripped = line.strip()
             if stripped.startswith("#"):
                 # Save previous block if it has content
                 if current_lines:
                     blocks[current_name] = current_lines
-                current_name = stripped.lstrip("#").strip()
+                current_name = stripped.lstrip("#").strip().replace(" ", "_")
                 current_lines = []
             elif stripped:  # skip blank lines
                 current_lines.append(stripped)

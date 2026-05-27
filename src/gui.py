@@ -9,15 +9,17 @@ from builders import *
 from inserter import *
 from topology import *
 from utils import *
+from global_info import *
 
 
 class Gui:
 
     def __init__(self):
+        self.global_info = GlobalInfo()
         self.config = Config()
         self.ffmanager = ForceFieldManager()
         self.topologyeditor = TopologyEditor()
-        self.parser = MartiniLipidParser(Path("resources/toppar"))
+        self.parser = MartiniLipidParser(Path(self.global_info.toppar_folder_path))
         self.builder = MembraneBuilder(self.parser)
         self.inserter = ProteinInserter()
         st.session_state.cx = ""
@@ -45,8 +47,9 @@ class Gui:
         self.create_layout()
         self.choose_module()
         self.create_folder_name_input()
-        self.config.forcefields = self.ffmanager.get_forcefield_names("resources/toppar")
+        self.config.forcefields = self.ffmanager.get_forcefield_names(self.global_info.toppar_folder_path)
         self.select_forcefield_input()
+        
         self.box_params()
         self.builder.setup_lipids(self.config.selected_ff)    
         ff_key = f"{self.config.selected_ff}.itp"
@@ -54,8 +57,13 @@ class Gui:
         all_lipids = available_lipids
         if not available_lipids and not st.session_state.imported_lipids:
             st.error("No lipids found")
+        
+        st.subheader("Membrane")
+        
         self.template_uploaded = self.template_uploader(available_lipids)
         self.streamlitentries(all_lipids)
+        lipid_map = self.parser.buildlipidmap(self.config.selected_ff)
+        self.display_lipid_mapping(lipid_map)
         self.horizontal_line()
         self.solvation_input()
         self.n_systems_input()
@@ -66,8 +74,8 @@ class Gui:
             pass
         else:
             random_name = st.session_state.random_name
-            if os.path.exists(f"./temp_uploads-{random_name}"):
-                    shutil.rmtree(f"./temp_uploads-{random_name}")
+            if os.path.exists(f"{self.global_info.temp_folder}-{random_name}"):
+                    shutil.rmtree(f"{self.global_info.temp_folder}-{random_name}")
         build = self.build_input()
         return build
 
@@ -76,8 +84,8 @@ class Gui:
     def create_layout(self):
         ''''''
         st.set_page_config(page_title="OpenBuilder", layout="wide")
-        st.markdown("""
-            <h1 style='color: red; font-size: 24px;'>🚀 OpenBuilder</h1>
+        st.markdown(f"""
+            <h1 style='color: red; font-size: 36px;'>🚀 OpenBuilder {self.global_info.version}</h1>
         """, unsafe_allow_html=True)
 
     def choose_module(self):
@@ -146,19 +154,27 @@ class Gui:
         st.session_state.solvation = f"solv:W pos:{pos_ion} neg:{neg_ion}        salt_molarity:{self.config.salt_molarity}"
         
     def template_uploader(self, available_lipids):
-        st.subheader("Membrane Template")
+        st.markdown("#### Membrane Template")
         random_name = st.session_state.random_name
-        temp_dir = f"./temp_uploads-{random_name}"
+        temp_dir = f"{self.global_info.temp_folder}-{random_name}"
         os.makedirs(temp_dir, exist_ok=True)
-        
-        uploaded_template = st.file_uploader("",type="csv", help = """
+        example_path = os.path.join(self.global_info.membrane_template_example_path, "example_template.ob")
+        if os.path.exists(example_path):
+            with open(example_path, "rb") as f:
+                st.download_button(
+                    label="⬇️ Download example template",
+                    data=f.read(),
+                    file_name="example_template.ob",
+                    help="Download a correctly formatted example file",
+                )
+        uploaded_template = st.file_uploader("", type=["csv","ob"], help = """
         Upload membrane CSV  
         Style: `resname, ratioupper, ratiolower, aplupper, apllower`  
         or: `resname, #upper, #lower, aplupper, apllower` → then select absolute numbers  
-        No header, can miss values
+        No header, can miss values, can contain multiple csv based setups, see example_template
         """)
         if uploaded_template:
-            st.session_state.template_path = os.path.join(f"./temp_uploads-{random_name}", uploaded_template.name)
+            st.session_state.template_path = os.path.join(f"{self.global_info.temp_folder}-{random_name}", uploaded_template.name)
             with open(st.session_state.template_path, "wb") as f:
                     f.write(uploaded_template.getvalue())
             
@@ -167,7 +183,134 @@ class Gui:
         
         else:
             st.session_state.template_active = False
+    
+    def display_lipid_mapping(self, lipid_map: Dict[str, Dict[str, str]]) -> None:
+        """
+        Render a toggle button + filterable lipid mapping table.
+        Manages its own show/hide state via st.session_state.
         
+        Parameters
+        ----------
+        lipid_map : Dict[str, Dict[str, str]]
+            Result of buildlipidmap(), keyed by resname.
+        """
+        import pandas as pd
+
+        # ── Toggle button ─────────────────────────────────────────────────
+        if "show_lipid_mapping" not in st.session_state:
+            st.session_state.show_lipid_mapping = False
+
+        label = "Hide Lipid Mapping" if st.session_state.show_lipid_mapping else "Show Lipid Mapping"
+        if st.button(label, key="toggle_lipid_mapping"):
+            st.session_state.show_lipid_mapping = not st.session_state.show_lipid_mapping
+            st.rerun()
+
+        if not st.session_state.show_lipid_mapping:
+            return
+
+        # ── Build DataFrame ───────────────────────────────────────────────
+        if not lipid_map:
+            st.warning("No lipid mapping data available.")
+            return
+
+        df = pd.DataFrame.from_dict(lipid_map, orient="index")[
+            ["resname", "moltype", "head", "linker", "tail1", "tail2"]
+        ].reset_index(drop=True)
+
+        st.subheader("Lipid Mapping")
+        st.caption(f"{len(df)} lipids found")
+
+        # ── Global search ─────────────────────────────────────────────────
+        search = st.text_input(
+            "🔍 Search across all fields",
+            placeholder="e.g. phosphatidylcholine, C18, glycerol...",
+            key="lipid_map_search",
+        )
+        if search:
+            mask = df.apply(
+                lambda col: col.str.contains(search, case=False, na=False)
+            ).any(axis=1)
+            df = df[mask]
+
+        # ── Per-column filters ────────────────────────────────────────────
+        with st.expander("🔽 Column filters", expanded=False):
+            col1, col2, col3, col4, col5 = st.columns(5)
+
+            with col1:
+                sel_moltype = st.multiselect(
+                    "Lipid class",
+                    sorted(df["moltype"].dropna().unique()),
+                    key="lipid_map_moltype",
+                )
+            with col2:
+                sel_head = st.multiselect(
+                    "Headgroup",
+                    sorted(df["head"].dropna().unique()),
+                    key="lipid_map_head",
+                )
+            with col3:
+                sel_linker = st.multiselect(
+                    "Linker",
+                    sorted(df["linker"].dropna().unique()),
+                    key="lipid_map_linker",
+                )
+            with col4:
+                tail1_input = st.text_input(
+                    "Tail 1 contains", placeholder="e.g. C18",
+                    key="lipid_map_tail1",
+                )
+            with col5:
+                tail2_input = st.text_input(
+                    "Tail 2 contains", placeholder="e.g. C20",
+                    key="lipid_map_tail2",
+                )
+
+        # Apply filters
+        if sel_moltype:
+            df = df[df["moltype"].isin(sel_moltype)]
+        if sel_head:
+            df = df[df["head"].isin(sel_head)]
+        if sel_linker:
+            df = df[df["linker"].isin(sel_linker)]
+        if tail1_input:
+            df = df[df["tail1"].str.contains(tail1_input, case=False, na=False)]
+        if tail2_input:
+            df = df[df["tail2"].str.contains(tail2_input, case=False, na=False)]
+
+        st.caption(f"Showing **{len(df)}** lipid(s)")
+
+        # ── Table ─────────────────────────────────────────────────────────
+        st.dataframe(
+            df.rename(columns={
+                "resname": "Residue",
+                "moltype": "Lipid class",
+                "head":    "Headgroup",
+                "linker":  "Linker",
+                "tail1":   "Tail 1",
+                "tail2":   "Tail 2",
+            }),
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Residue":     st.column_config.TextColumn(width="small"),
+                "Lipid class": st.column_config.TextColumn(width="medium"),
+                "Headgroup":   st.column_config.TextColumn(width="large"),
+                "Linker":      st.column_config.TextColumn(width="medium"),
+                "Tail 1":      st.column_config.TextColumn(width="small"),
+                "Tail 2":      st.column_config.TextColumn(width="small"),
+            },
+        )
+
+        # ── CSV download ──────────────────────────────────────────────────
+        st.download_button(
+            label="⬇️ Download as CSV",
+            data=df.to_csv(index=False).encode("utf-8"),
+            file_name="lipid_mapping.csv",
+            mime="text/csv",
+            key="lipid_map_download",
+        )
+
+
     def n_systems_input(self):
         '''Input for number of systems'''
         self.config.n_systems = st.sidebar.number_input("🔄 Systems", 1, 99, 1, help="Number of independent systems to create and process")
@@ -176,13 +319,13 @@ class Gui:
     def cg_protein_upload_input(self):
         ''' Upload areas for protein pdb and itp files, saved into a temporary folder'''
         random_name = st.session_state.random_name
-        temp_dir = f"./temp_uploads-{random_name}"
+        temp_dir = f"{self.global_info.temp_folder}-{random_name}"
         os.makedirs(temp_dir, exist_ok=True)
         
         self.config.pdb_file = st.sidebar.file_uploader("🧬 PDB", type="pdb", help="Upload a PDB file containing the coarse-grained protein structure")
         if self.config.pdb_file is not None:
             
-            pdb_path = os.path.join(f"./temp_uploads-{random_name}", self.config.pdb_file.name)
+            pdb_path = os.path.join(f"{self.global_info.temp_folder}-{random_name}", self.config.pdb_file.name)
             with open(pdb_path, "wb") as f:
                 f.write(self.config.pdb_file.getvalue())
  
@@ -191,7 +334,7 @@ class Gui:
                 
         self.config.itp_file = st.sidebar.file_uploader("🔗 ITP", type="itp")
         if self.config.itp_file is not None:
-            itp_path = os.path.join(f"./temp_uploads-{random_name}", self.config.itp_file.name)
+            itp_path = os.path.join(f"{self.global_info.temp_folder}-{random_name}", self.config.itp_file.name)
             with open(itp_path, "wb") as f:
                 f.write(self.config.itp_file.getvalue())
             st.session_state.itp_path = itp_path
@@ -297,7 +440,7 @@ class Gui:
 
     def streamlitentries(self, availablelipids):
         '''Membrane composition input'''
-        st.subheader("Membrane Entries")
+        st.markdown("#### Membrane Entries")
         st.session_state.abs_lip_vals = st.checkbox("Give absolute lipid values")
         if not st.session_state.template_active:
 
@@ -342,8 +485,8 @@ class Gui:
                 col_configs = [
                     ("#upper",   "ratioupper", 0,   10000, 1.0,  "Number of lipids in the upper leaflet"),
                     ("#lower",   "ratiolower", 0,   10000, 1.0,  "Number of lipids in the lower leaflet"),
-                    ("aplupper", "aplupper",   0.1, 1.0,   0.1,  "Area per lipid in the upper leaflet (nm²)"),
-                    ("apllower", "apllower",   0.1, 1.0,   0.1,  "Area per lipid in the lower leaflet (nm²)"),
+                    ("aplupper", "aplupper",   0.1, 1.0,   0.1,  "Area per lipid in the upper leaflet (nm²); larger values correspond to lower membrane compactness"),
+                    ("apllower", "apllower",   0.1, 1.0,   0.1,  "Area per lipid in the lower leaflet (nm²); larger values correspond to lower membrane compactness"),
                 ]
 
                 for idx, entry in enumerate(st.session_state.entries_abs):

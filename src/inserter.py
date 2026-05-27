@@ -6,9 +6,11 @@ import streamlit as st
 import MDAnalysis as mda
 from scipy.spatial.transform import Rotation as R
 from pathlib import Path
+from datetime import datetime
 
 from builders import MartiniLipidParser, MembraneBuilder
 from utils import run_coby_simulation
+from global_info import *
 
 
 class ProteinInserter:
@@ -20,7 +22,8 @@ class ProteinInserter:
     """
 
     def __init__(self):
-        self.parser  = MartiniLipidParser(Path("resources/toppar"))
+        self.global_info = GlobalInfo
+        self.parser  = MartiniLipidParser(Path(self.global_info.toppar_folder_path))
         self.builder = MembraneBuilder(self.parser)
 
     # ------------------------------------------------------------------
@@ -170,7 +173,10 @@ class ProteinInserter:
         Returns the mean Z of the top-10% lipid atoms in Angstrom.
         Falls back to 0.0 on any error.
         """
-        temp_dir = os.path.join(system_path, "temp_membrane_z")
+        now = datetime.now()
+
+        datetime_ext = now.strftime("%Y%m%d_%H%M%S") 
+        temp_dir = os.path.join(system_path, f"temp_membrane_z-{datetime_ext}")
         os.makedirs(temp_dir, exist_ok=True)
         try:
             membrane_params = {
@@ -182,7 +188,7 @@ class ProteinInserter:
                 "moleculeimport": "",
                 "solvation": config.solvation,
                 "selectedforcefield": config.selected_ff,
-                "itp_input": f"include:resources/toppar/{config.selected_ff}.itp",
+                "itp_input": f"include:{self.global_info.toppar_folder_path}/{config.selected_ff}.itp",
             }
             run_coby_simulation(membrane_params, "", temp_dir)
             membrane_gro = os.path.join(temp_dir, "system.gro")
