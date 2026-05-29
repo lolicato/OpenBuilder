@@ -1,9 +1,11 @@
-# Setup1 ; If only one template is used, remove the naming line starting with a '#' as they seperate templates, so a clean csv style file is everything need for a single template. These lines will also determine the folder name for the replica
-lipid1_resname,lipid1_ratio_upper,lipid1_ratio_lower,lipid1_apl_upper,lipid1_apl_lower ;apl = area per lipid (nm^2), larger values correpsond to lower membrane compactness
-lipid2_resname,lipid2_ratio_upper,lipid2_ratio_lower,lipid2_apl_upper,lipid2_apl_lower ; If kept consistent at a 3 or 5 column csv style, the apl can be left out, it will get the default 0.6 assigned
-# Setup2
-lipid1_resname,lipid1_ratio_upper,lipid1_ratio_lower,lipid1_apl_upper,lipid1_apl_lower
-lipid3_resname,lipid3_ratio_upper,lipid3_ratio_lower,lipid3_apl_upper,lipid3_apl_lower
-# Setup 3 ; actualy example with values, absolute number are also possible, this needs to be consistent through the whole file though and needs to be selected.
-POPC,1,0.3,0.61, ; one can leave apl out to get the default 0.6 assigned here
-DOPC,0,0.7,,    
+# PlasmaMembrane
+
+resname,upper_leaflet,lower_leaflet,apl_upper,apl_lower
+POPC,0.70,0.30,0.61,0.61
+DOPC,0.30,0.70,
+
+# CholesterolRich
+
+resname,upper_leaflet,lower_leaflet,apl_upper,apl_lower
+POPC,0.50,0.40,0.61,0.61
+CHOL,0.50,0.60,0.40,0.40

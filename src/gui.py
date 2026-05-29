@@ -154,35 +154,44 @@ class Gui:
         st.session_state.solvation = f"solv:W pos:{pos_ion} neg:{neg_ion}        salt_molarity:{self.config.salt_molarity}"
         
     def template_uploader(self, available_lipids):
-        st.markdown("#### Membrane Template")
-        random_name = st.session_state.random_name
-        temp_dir = f"{self.global_info.temp_folder}-{random_name}"
-        os.makedirs(temp_dir, exist_ok=True)
-        example_path = os.path.join(self.global_info.membrane_template_example_path, "example_template.ob")
-        if os.path.exists(example_path):
-            with open(example_path, "rb") as f:
-                st.download_button(
-                    label="⬇️ Download example template",
-                    data=f.read(),
-                    file_name="example_template.ob",
-                    help="Download a correctly formatted example file",
-                )
-        uploaded_template = st.file_uploader("", type=["csv","ob"], help = """
-        Upload membrane CSV  
-        Style: `resname, ratioupper, ratiolower, aplupper, apllower`  
-        or: `resname, #upper, #lower, aplupper, apllower` → then select absolute numbers  
-        No header, can miss values, can contain multiple csv based setups, see example_template
-        """)
-        if uploaded_template:
-            st.session_state.template_path = os.path.join(f"{self.global_info.temp_folder}-{random_name}", uploaded_template.name)
-            with open(st.session_state.template_path, "wb") as f:
-                    f.write(uploaded_template.getvalue())
+        with st.expander("Do you have a membrane template?", expanded=True):
+            st.markdown(
+            """
+            #### Membrane Template
+            Upload a membrane template (`.ob` or `.csv`) to automatically load membrane compositions.
             
-            membrane_template = self.builder.load_membrane_template_from_csv(st.session_state.template_path, available_lipids)
-            st.session_state.template_active = True
-        
-        else:
-            st.session_state.template_active = False
+            📖 See the [Membrane Template Documentation](https://lolicato.github.io/OpenBuilder/membrane_templates/) for format specifications and examples.
+            """
+            )
+
+            random_name = st.session_state.random_name
+            temp_dir = f"{self.global_info.temp_folder}-{random_name}"
+            os.makedirs(temp_dir, exist_ok=True)
+            example_path = os.path.join(self.global_info.membrane_template_example_path, "example_template.ob")
+            if os.path.exists(example_path):
+                with open(example_path, "rb") as f:
+                    st.download_button(
+                        label="⬇️ Download example template",
+                        data=f.read(),
+                        file_name="example_template.ob",
+                        help="Download a correctly formatted example file",
+                    )
+            uploaded_template = st.file_uploader("", type=["csv","ob"], help = """
+            Upload membrane template `.csv` or `.ob` file.\n
+            Style: `resname, ratioupper, ratiolower, aplupper, apllower`  
+            or: `resname, #upper, #lower, aplupper, apllower` → then select absolute numbers  
+            No header, can miss values, can contain multiple csv based setups, see example_template
+            """)
+            if uploaded_template:
+                st.session_state.template_path = os.path.join(f"{self.global_info.temp_folder}-{random_name}", uploaded_template.name)
+                with open(st.session_state.template_path, "wb") as f:
+                        f.write(uploaded_template.getvalue())
+                
+                membrane_template = self.builder.load_membrane_template_from_csv(st.session_state.template_path, available_lipids)
+                st.session_state.template_active = True
+            
+            else:
+                st.session_state.template_active = False
     
     def display_lipid_mapping(self, lipid_map: Dict[str, Dict[str, str]]) -> None:
         """
