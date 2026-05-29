@@ -1,0 +1,14 @@
+TITLE     Original
+REMARK    THIS IS A SIMULATION BOX
+CRYST1   32.423   32.423   32.423  90.00  90.00  90.00 P 1           1
+MODEL        1
+ATOM      1  ROH HOL     0      15.245  15.258  22.609  1.00  0.00            
+ATOM      2  R1  HOL     0      16.239  16.708  20.437  1.00  0.00            
+ATOM      3  R2  HOL     0      17.404  15.545  18.242  1.00  0.00            
+ATOM      4  R3  HOL     0      15.623  16.967  16.880  1.00  0.00            
+ATOM      5  R4  HOL     0      17.191  15.749  14.805  1.00  0.00            
+ATOM      6  R5  HOL     0      16.747  17.861  15.013  1.00  0.00            
+ATOM      7  C1  HOL     0      15.410  17.242  11.474  1.00  0.00           C
+ATOM      8  C2  HOL     0      15.833  14.362  10.233  1.00  0.00           C
+TER
+ENDMDL

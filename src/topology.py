@@ -3,9 +3,11 @@ import shutil
 import re
 import streamlit as st
 from global_info import *
+from config import *
 class TopologyEditor:
     def __init__(self):
-        self.global_info = GlobalInfo
+        self.global_info = GlobalInfo()
+        self.config = Config()
     def edit_topology(self, ff_name: str, destination: str):
         topol_file = os.path.join(destination, "topol.top")
         ff_itp = os.path.join(self.global_info.toppar_folder_path, f"{ff_name}.itp")
@@ -101,6 +103,7 @@ class TopologyEditor:
         if modified:
             with open(topol_path, 'w') as f:
                 f.writelines(updated_lines)
+
 
 
 class ForceFieldManager:

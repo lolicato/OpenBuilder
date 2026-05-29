@@ -15,6 +15,10 @@ class GlobalInfo:
     membrane_template_example_path:str  = os.path.join(resources_path, membrane_template_example_folder)
     temp_folder: str = "./temp_uploads"
     default_template_name: str = "single_setup"
+    import_folder: str ="file_imports"
+    chol_file: str = os.path.join(resources_path, import_folder, "CHOL.pdb")
+    chol2_file: str = os.path.join(resources_path, import_folder, "CHOL2.pdb")
+    wf_file: str = os.path.join(resources_path, import_folder, "WF.gro")
     
     
 

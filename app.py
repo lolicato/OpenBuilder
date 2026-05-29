@@ -13,15 +13,16 @@ from topology import *
 from utils import *
 from gui import *
 from main import *
-
+from global_info import *
 
 
 class OpenBuilderApp:
     def __init__(self):
+        self.global_info = GlobalInfo()
         self.config = Config()
         self.ffmanager = ForceFieldManager()
         self.topologyeditor = TopologyEditor()
-        self.parser = MartiniLipidParser(Path("resources/toppar"))
+        self.parser = MartiniLipidParser(Path(self.global_info.toppar_folder_path))
         self.builder = MembraneBuilder(self.parser)
         self.inserter = ProteinInserter()
         self.gui = Gui()
@@ -58,11 +59,7 @@ class OpenBuilderApp:
             self.config.box_z = st.session_state.box_z
             self.config.box_type = st.session_state.box_type
             self.config.salt_molarity = float(st.session_state.get("salt_molarity", 0.15))
-            self.config.solvation = (
-                f"solv:W pos:{st.session_state.get('pos_ion', 'NA')} "
-                f"neg:{st.session_state.get('neg_ion', 'CL')} "
-                f"salt_molarity:{self.config.salt_molarity}"
-            )
+            self.config.solvation = st.session_state.solvation
 
 
             self.config.template_active = st.session_state.template_active
@@ -80,6 +77,7 @@ class OpenBuilderApp:
                 folder_name = f"{main_folder_name}-{st.session_state.output_name}"
             else:
                 folder_name = main_folder_name
+            self.config.selected_ff = st.session_state.get("selected_ff", "martini_v3")
             self.builder.setup_lipids(self.config.selected_ff)
             ff_key = f"{self.config.selected_ff}.itp"
             available_lipids = self.parser.lipidmap.get(ff_key, [])
@@ -157,7 +155,7 @@ class OpenBuilderApp:
             finally:
                 random_name = st.session_state.get("random_name")
                 if random_name:
-                    temp_dir = f"./temp_uploads-{random_name}"
+                    temp_dir = f"{self.global_info.temp_folder}-{random_name}"
                     if os.path.exists(temp_dir):
                         shutil.rmtree(temp_dir)
                         print(f"🧹 Cleared {temp_dir}/")

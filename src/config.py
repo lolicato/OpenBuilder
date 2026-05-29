@@ -33,6 +33,7 @@ class Config:
     template_path: str =""
     membrane_string: str = ""
 
+
     # save GUI values into Config
     abs_lip_vals: bool = False
     lipid_entries_relative: list = None

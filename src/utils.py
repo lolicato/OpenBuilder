@@ -56,12 +56,13 @@ def run_coby_simulation(params: dict, protein_line: Optional[str], system_path: 
     }
 
     if params.get("moleculeimport"):
-        coby_args["molecule_import"] = params.get("moleculeimport", "")
+        coby_args["molecule_import"] = params["moleculeimport"]
+
 
     if protein_line:
         coby_args["protein"] = protein_line
 
-
+        
     COBY.COBY(**coby_args)
 
     return system_path

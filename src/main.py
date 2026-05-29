@@ -68,16 +68,27 @@ class MainBuilder:
             itp_input_ff = f"include:{self.global_info.toppar_folder_path}/{self.config.selected_ff}.itp"
             self.builder.config = self.config
             self.config.membrane_string = self.builder.create_membrane_str()
+            chol_import_needed = self.builder.check_chol_import()
+            molecule_imports = []
+            if chol_import_needed == "CHOL":
+                molecule_imports.append(f"file:{self.global_info.chol_file} moleculetype:{chol_import_needed} params:IMPORTED")
+            elif chol_import_needed == "CHOL2":
+                molecule_imports.append(f"file:{self.global_info.chol2_file} moleculetype:{chol_import_needed} params:IMPORTED")
+
+            if self.config.selected_ff == "martini_v2.2":
+                if "WF" in self.config.solvation:
+                    molecule_imports.append(f"file:{self.global_info.wf_file} moleculetype:WF params:IMPORTED")
+
             params = {
                 "boxx":               float(self.config.box_x),
                 "boxy":               float(self.config.box_y),
                 "boxz":               float(self.config.box_z),
                 "box_type":           self.config.box_type,
+                "moleculeimport":     molecule_imports,  # always a list, may be empty
                 "membrane":           self.config.membrane_string,
                 "solvation":          self.config.solvation,
                 "selectedforcefield": self.config.selected_ff,
             }
-
             # --------------------------------------------------------------
             # Step 3 – Per-system pipeline
             # --------------------------------------------------------------
@@ -110,8 +121,7 @@ class MainBuilder:
                 coby_output = run_coby_simulation(params, protein_line, system)
                 self.topologyeditor.edit_topology(self.config.selected_ff, system)
                 if not self.config.selected_module == "membrane":
-                    self.topologyeditor.fix_protein_includes_only(
-                        os.path.join(coby_output, "topol.top"))
+                    self.topologyeditor.fix_protein_includes_only(os.path.join(coby_output, "topol.top"))
 
             all_systems.extend(systems)
 

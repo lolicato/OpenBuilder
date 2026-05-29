@@ -488,42 +488,48 @@ class MembraneBuilder:
             default_entry = [available_lipids[0], 1.0, 1.0, 0.6, 0.6]
             st.session_state.entries_abs = [default_entry]
 
-        
+    def lipid_param(self,lip):
+        if self.config.selected_ff == "martini_v2.2":
+            if lip =="CHOL" or lip == "CHOL2":
+                self.config.chol_import_needed = "CHOL" if lip == "CHOL" else "CHOL2"
+                return "params:IMPORTED"
+            else:
+                return "params:M2"    
+        elif len(lip) == 4 and lip[-2] == "P":
+            return "params:TOP"
+        elif len(lip) == 3 and lip[-2:] == "SM":
+            return "params:TOP"
+        else:
+            return "params:default"    
 
     def create_membrane_str(self):
         """Create the COBY input string to generate the membrane."""
-        def lipid_param(lip):
-            if len(lip) == 4 and lip[-2] == "P":
-                return "params:TOP"
-            elif len(lip) == 3 and lip[-2:] == "SM":
-                return "params:TOP"
-            else:
-                return "params:default"
+        
 
         entries = self.config.entries_current
 
         if not self.config.abs_lip_vals:
             upper_string = "leaflet:upper " + " ".join([
-                f"lipid:{lip}:{upper}:charge:top:{lipid_param(lip)}:apl:{apl}"
+                f"lipid:{lip}:{upper}:charge:top:{self.lipid_param(lip)}:apl:{apl}"
                 for lip, upper, _, apl, _ in entries
                 if float(upper) > 0
             ])
 
             lower_string = "leaflet:lower " + " ".join([
-                f"lipid:{lip}:{lower}:charge:top:{lipid_param(lip)}:apl:{apl}"
+                f"lipid:{lip}:{lower}:charge:top:{self.lipid_param(lip)}:apl:{apl}"
                 for lip, _, lower, _, apl in entries
                 if float(lower) > 0
             ])
 
         else:
             upper_string = "leaflet:upper lipid_optim:abs_val " + " ".join([
-                f"lipid:{lip}:{upper}:charge:top:{lipid_param(lip)}:apl:{apl}"
+                f"lipid:{lip}:{upper}:charge:top:{self.lipid_param(lip)}:apl:{apl}"
                 for lip, upper, _, apl, _ in entries
                 if float(upper) > 0
             ])
 
             lower_string = "leaflet:lower lipid_optim:abs_val " + " ".join([
-                f"lipid:{lip}:{lower}:charge:top:{lipid_param(lip)}:apl:{apl}"
+                f"lipid:{lip}:{lower}:charge:top:{self.lipid_param(lip)}:apl:{apl}"
                 for lip, _, lower, _, apl in entries
                 if float(lower) > 0
             ])
@@ -531,7 +537,14 @@ class MembraneBuilder:
         membrane_string = f"grid_maker_grouping_algorithm:no_groups {upper_string} {lower_string}"
         self.config.membrane_string = membrane_string
         return membrane_string
-
+    def check_chol_import(self):
+        """Check entries_current for cholesterol lipids and set chol_import_needed if found."""
+        if self.config.selected_ff != "martini_v2.2":
+            return None
+        for lip, *_ in self.config.entries_current:
+            if lip in ("CHOL", "CHOL2"):
+                return lip
+        return None
 
 if __name__ == "__main__":
     parser = MartiniLipidParser()

@@ -175,8 +175,9 @@ class ProteinInserter:
         """
         now = datetime.now()
 
-        datetime_ext = now.strftime("%Y%m%d_%H%M%S") 
-        temp_dir = os.path.join(system_path, f"temp_membrane_z-{datetime_ext}")
+        datetime_ext = now.strftime("%Y%m%d_%H%M%S")
+        random_int = random.randint(100000,999999)
+        temp_dir = os.path.join(system_path, f"temp_membrane_z-{datetime_ext}-{random_int}")
         os.makedirs(temp_dir, exist_ok=True)
         try:
             membrane_params = {

@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import random
 from datetime import datetime
+import pandas as pd
 
 from config import *
 from builders import *
@@ -107,6 +108,7 @@ class Gui:
         '''Looks for available forcefields and presents them in a dropdown menu'''
         self.config.selected_ff = st.sidebar.selectbox("⚛️ Force Field", self.config.forcefields, 
             index=self.config.forcefields.index("martini_v3") if "martini_v3" in self.config.forcefields else 0)
+        st.session_state.selected_ff = self.config.selected_ff
     
 
     def box_params(self):
@@ -151,8 +153,17 @@ class Gui:
         neg_ion = st.sidebar.selectbox("➖ Negative Ion", ["CL", "BR", "IOD", "ACE", "BF4", "PF6", "SCN", "CLO4", "NO3"], key="neg_ion")
         
         self.config.salt_molarity = st.sidebar.number_input("🧂 Salt Molarity (M)", 0.0, 2.0, 0.15, key="salt_molarity")
-        st.session_state.solvation = f"solv:W pos:{pos_ion} neg:{neg_ion}        salt_molarity:{self.config.salt_molarity}"
         
+        if self.config.selected_ff == "martini_v2.2":
+            percentage_w_replace = st.sidebar.number_input("Percentage (%) of unfreezable water", 0.0, 100.0, 10.0, key="replace_w_percentage", help="Percentage of water to replace with unfreezable water (WF)")
+            percentage_w = 100-percentage_w_replace
+            if percentage_w_replace != 0.0:
+                st.session_state.solvation = f"solv:W:{percentage_w} solv:WF:{percentage_w_replace}:params:IMPORTED pos:{pos_ion} neg:{neg_ion} salt_molarity:{self.config.salt_molarity}"
+            else:
+                st.session_state.solvation = f"solv:W pos:{pos_ion} neg:{neg_ion} salt_molarity:{self.config.salt_molarity}"
+        else:
+            st.session_state.solvation = f"solv:W pos:{pos_ion} neg:{neg_ion}        salt_molarity:{self.config.salt_molarity}"
+
     def template_uploader(self, available_lipids):
         with st.expander("Do you have a membrane template?", expanded=True):
             st.markdown(
@@ -176,12 +187,7 @@ class Gui:
                         file_name="example_template.ob",
                         help="Download a correctly formatted example file",
                     )
-            uploaded_template = st.file_uploader("", type=["csv","ob"], help = """
-            Upload membrane template `.csv` or `.ob` file.\n
-            Style: `resname, ratioupper, ratiolower, aplupper, apllower`  
-            or: `resname, #upper, #lower, aplupper, apllower` → then select absolute numbers  
-            No header, can miss values, can contain multiple csv based setups, see example_template
-            """)
+            uploaded_template = st.file_uploader("", type=["csv","ob"])
             if uploaded_template:
                 st.session_state.template_path = os.path.join(f"{self.global_info.temp_folder}-{random_name}", uploaded_template.name)
                 with open(st.session_state.template_path, "wb") as f:
@@ -203,7 +209,6 @@ class Gui:
         lipid_map : Dict[str, Dict[str, str]]
             Result of buildlipidmap(), keyed by resname.
         """
-        import pandas as pd
 
         # ── Toggle button ─────────────────────────────────────────────────
         if "show_lipid_mapping" not in st.session_state:
@@ -318,7 +323,7 @@ class Gui:
             mime="text/csv",
             key="lipid_map_download",
         )
-
+    
 
     def n_systems_input(self):
         '''Input for number of systems'''
