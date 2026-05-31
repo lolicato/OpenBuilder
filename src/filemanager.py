@@ -37,12 +37,26 @@ class FileManager():
                 shutil.copy(os.path.join(src_mdp, file), os.path.join(dst_mdp, file))
 
     def copy_scripts(self, destination: str):
-        '''copies run.sh file into the output folder'''
+        """Copy scripts into the output folder."""
+
         src_scripts = self.global_info.scripts_folder_path
         dst_scripts = os.path.join(destination, "systems")
 
         if os.path.exists(src_scripts):
             shutil.copytree(src_scripts, dst_scripts, dirs_exist_ok=True)
+
+            # Move helper scripts to output/scripts
+            src_index = os.path.join(dst_scripts, "index.sh")
+            dst_index_dir = os.path.join(destination, "scripts")
+
+            if os.path.exists(src_index):
+                os.makedirs(dst_index_dir, exist_ok=True)
+                shutil.move(
+                    src_index,
+                    os.path.join(dst_index_dir, "index.sh")
+                )
+
+            
 
     def create_zip_folder(self, folder_path: str) -> str:
         '''creates a downloadable zip folder form the output'''

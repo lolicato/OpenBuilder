@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
+
+RUN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$RUN_DIR/.." && pwd)"
+SCRIPT_DIR="$ROOT_DIR/scripts"
+MDP_DIR="$ROOT_DIR/mdp"
+CONFIG_FILE="$ROOT_DIR/config.json"
+
+source "$SCRIPT_DIR/index.sh"
 
 STEPS=("em" "eq1" "eq2" "eq3" "md")
 
@@ -15,8 +23,7 @@ for system_dir in ./*; do
     input_gro="system.gro"
 
     for step in "${STEPS[@]}"; do
-
-        mdp_file="../../mdp/${step}.mdp"
+        mdp_file="$MDP_DIR/${step}.mdp"
         tpr_file="${step}.tpr"
         output_gro="${step}.gro"
 
@@ -54,25 +61,15 @@ for system_dir in ./*; do
         echo ">>> mdrun: $step"
 
         gmx mdrun \
-            -deffnm "$step" -v
+            -deffnm "$step" \
+            -v
 
         input_gro="$output_gro"
 
-        # --------------------------------------------------
-        # Create index after minimization
-        # --------------------------------------------------
         if [ "$step" = "em" ]; then
-
             echo ">>> Creating index.ndx"
 
-            echo "del 1-100" > inp.inp
-            echo "rW|rION" >> inp.inp
-            echo "name 1 SOLV" >> inp.inp
-            echo "0&!1" >> inp.inp
-            echo "name 2 SOLU" >> inp.inp
-            echo "q" >> inp.inp
-
-            gmx make_ndx -f em.gro < inp.inp
+            make_index_input "$CONFIG_FILE"
 
             gmx make_ndx \
                 -f em.gro \
@@ -83,7 +80,7 @@ for system_dir in ./*; do
         fi
     done
 
-    cd ../..
+    cd "$RUN_DIR"
 done
 
 echo ""
