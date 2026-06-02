@@ -1,9 +1,8 @@
 import os
 import shutil
 import re
-import streamlit as st
-from global_info import *
-from config import *
+from global_info import GlobalInfo
+from config import Config
 class TopologyEditor:
     def __init__(self):
         self.global_info = GlobalInfo()
@@ -13,7 +12,7 @@ class TopologyEditor:
         ff_itp = os.path.join(self.global_info.toppar_folder_path, f"{ff_name}.itp")
 
         if not os.path.exists(ff_itp):
-            st.warning(f"{ff_itp} not found")
+            print(f"{ff_itp} not found")
             return
 
         with open(ff_itp, 'r') as f:

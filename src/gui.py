@@ -4,13 +4,13 @@ from pathlib import Path
 import random
 from datetime import datetime
 import pandas as pd
+import shutil
 
-from config import *
-from builders import *
-from inserter import *
-from topology import *
-from utils import *
-from global_info import *
+from config import Config
+from builders import MartiniLipidParser,MembraneBuilder
+from inserter import ProteinInserter
+from topology import TopologyEditor, ForceFieldManager
+from global_info import GlobalInfo
 
 
 class Gui:
@@ -162,7 +162,7 @@ class Gui:
             else:
                 st.session_state.solvation = f"solv:W pos:{pos_ion} neg:{neg_ion} salt_molarity:{self.config.salt_molarity}"
         else:
-            st.session_state.solvation = f"solv:W pos:{pos_ion} neg:{neg_ion}        salt_molarity:{self.config.salt_molarity}"
+            st.session_state.solvation = f"solv:W pos:{pos_ion} neg:{neg_ion} salt_molarity:{self.config.salt_molarity}"
 
     def template_uploader(self, available_lipids):
         with st.expander("Do you have a membrane template?", expanded=True):
@@ -193,13 +193,13 @@ class Gui:
                 with open(st.session_state.template_path, "wb") as f:
                         f.write(uploaded_template.getvalue())
                 
-                membrane_template = self.builder.load_membrane_template_from_csv(st.session_state.template_path, available_lipids)
+                _ = self.builder.load_membrane_template_from_csv(st.session_state.template_path, available_lipids, gui=True)
                 st.session_state.template_active = True
             
             else:
                 st.session_state.template_active = False
     
-    def display_lipid_mapping(self, lipid_map: Dict[str, Dict[str, str]]) -> None:
+    def display_lipid_mapping(self, lipid_map) -> None:
         """
         Render a toggle button + filterable lipid mapping table.
         Manages its own show/hide state via st.session_state.

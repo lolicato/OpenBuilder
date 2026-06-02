@@ -84,7 +84,7 @@ class MainBuilder:
                 "boxy":               float(self.config.box_y),
                 "boxz":               float(self.config.box_z),
                 "box_type":           self.config.box_type,
-                "moleculeimport":     molecule_imports,  # always a list, may be empty
+                "moleculeimport":     molecule_imports,  
                 "membrane":           self.config.membrane_string,
                 "solvation":          self.config.solvation,
                 "selectedforcefield": self.config.selected_ff,
@@ -109,7 +109,7 @@ class MainBuilder:
                     params["itp_input"] = [itp_input_ff, itp_input_protein]
 
                     protein_line = self.inserter.insert_protein(
-                        pdb_dest, system, self.config,
+                        pdb_dest, system, self.config,molecule_imports,
                         system_index=system_index)
 
                     self.topologyeditor.overwrite_moleculetype_line(
@@ -163,7 +163,7 @@ class MainBuilder:
                         mime="application/zip",
                     )
             except FileNotFoundError:
-                st.warning(f"ZIP not found")
+                st.warning("ZIP not found")
         else:
             print(f"ZIP created: {zip_path}")
 
@@ -180,7 +180,7 @@ class MainBuilder:
 
         if self.config.template_active:
             self.config.entries = self.builder.load_membrane_template_from_csv(
-                self.config.template_path, available_lipids
+                self.config.template_path, available_lipids, gui=False
             )
                 
         else:

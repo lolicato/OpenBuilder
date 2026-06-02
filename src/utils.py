@@ -1,8 +1,5 @@
 import os
-from topology import *
-from filemanager import *
 import COBY
-import streamlit as st
 import MDAnalysis as mda
 from typing import Optional
 
@@ -15,7 +12,7 @@ def convert_gro_to_pdb(gro_file: str, pdb_file: str) -> Optional[str]:
             w.write(u.atoms)
         return pdb_file
     except Exception as e:
-        st.error(f"Gro→Pdb failed: {e}")
+        print(f"Gro→Pdb failed: {e}")
         return None
 def run_coby_simulation(params: dict, protein_line: Optional[str], system_path: str) -> str:
     """Combine args and run COBY"""
@@ -62,20 +59,12 @@ def run_coby_simulation(params: dict, protein_line: Optional[str], system_path: 
     if protein_line:
         coby_args["protein"] = protein_line
 
-        
+
     COBY.COBY(**coby_args)
 
     return system_path
 
 
 
-def show_structure(pdb_path: str, height: int = 500):
-    if not os.path.exists(pdb_path):
-        return
-    if MOLSTAR_AVAILABLE:
-        st_molstar(pdb_path, height=height)
-    else:
-        with open(pdb_path, 'r') as f:
-            st.code(f.read()[:1000], language="pdb")
 
 

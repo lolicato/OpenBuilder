@@ -1,8 +1,7 @@
 import shutil
 import os
 from pathlib import Path
-import json
-from global_info import *
+from global_info import GlobalInfo
 
 class FileManager():
     def __init__(self):

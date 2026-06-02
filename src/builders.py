@@ -2,9 +2,9 @@ import os
 import re
 import streamlit as st
 import pandas as pd
-from typing import List, Dict, Optional
+from typing import List, Dict
 from pathlib import Path
-from config import *
+from config import Config
 
 
 
@@ -46,7 +46,7 @@ class MartiniLipidParser:
                 if includepath.exists():
                     includes.append(includepath)
         except Exception as e:
-            st.warning(f"Parse {ffile}: {e}")
+            st.warning(f"Parse {fffile}: {e}")
         return includes
     
     def extractmoleculetypessinglefile(self, filepath: str) -> List[str]:
@@ -133,7 +133,20 @@ class MartiniLipidParser:
             "TAG":  "Triacylglycerol (TAG)",
             "MAG":  "Monoacylglycerol (MAG)",
             "CHOL": "Cholesterol",
-            "ERG":  "Ergosterol",
+        }
+
+        # Forcefield-specific sterol label overrides.
+        # Key: fffile name (or normalized prefix). Value: {resname: (head_label, moltype_label)}.
+        # martini3: no entry needed — HEADGROUP_MAP + sterol fallback block
+        #           already produce the correct "Cholesterol" label and "Sterol" moltype.
+        STEROL_OVERRIDES: Dict[str, Dict[str, tuple]] = {
+            "martini_v2.2": {
+                "CHOL":  ("Cholesterol (default)", "Sterol"),
+                "CHOL2": ("Improved Cholesterol (https://doi.org/10.26434/chemrxiv-2022-t41rx)",  "Sterol"),
+            },
+            "martini_v3": {
+                "CHOL": ("Cholesterol", "Sterol"),
+            },
         }
 
         MOLTYPE_LINKER_MAP = {
@@ -164,6 +177,9 @@ class MartiniLipidParser:
             "monoglyceride_ltf":    "Monoglyceride",
         }
 
+        # Known sterol resnames to detect in files that lack @COBY annotations.
+        KNOWN_STEROLS = {"CHOL", "CHOL2"}
+
         # ── Regex patterns ────────────────────────────────────────────────
 
         title_pat = re.compile(
@@ -176,6 +192,11 @@ class MartiniLipidParser:
         )
         coby_pat = re.compile(
             r'@COBY\s+moltype:(\S+)\s+head:(\S+)\s+tail1:(\S+)\s+tail2:(\S+)\s+name:(\S+)',
+            re.IGNORECASE
+        )
+        # Detects [ moleculetype ] blocks whose name is a known sterol (no @COBY needed).
+        sterol_moltype_pat = re.compile(
+            r'\[\s*moleculetype\s*\]\s*\n\s*(\w+)',
             re.IGNORECASE
         )
 
@@ -192,18 +213,17 @@ class MartiniLipidParser:
         def parse_tails_from_title(fragment: str):
             fragment = fragment.strip()
 
-            # ── di-CXX:Y → both tails identical ──────────────────────────────
-            # Handles: "di-C08:0", "di-C18:1(9c)", "di-C20:4(5c,8c,11c,14c)"
+            # di-CXX:Y → both tails identical
             di_match = re.match(
                 r'di-[Cc](\d+:\d+(?:\([^)]*\))?)',
                 fragment,
                 re.IGNORECASE
             )
             if di_match:
-                tail = "C" + di_match.group(1)   # e.g. C08:0, C18:1(9c)
+                tail = "C" + di_match.group(1)
                 return tail, tail
 
-            # ── Sphingolipid: C(d18:1/12:0) ──────────────────────────────────
+            # Sphingolipid: C(d18:1/12:0)
             sphingo = re.match(r'[Cc]\((.*?)\)', fragment)
             if sphingo:
                 parts = [p.strip() for p in sphingo.group(1).split('/')]
@@ -211,7 +231,7 @@ class MartiniLipidParser:
                 t2 = ("C" + parts[1]) if len(parts) > 1 else None
                 return t1, t2
 
-            # ── Standard diacyl: C18:1/22:1 or C18:1(9c)/22:1(13c) ──────────
+            # Standard diacyl: C18:1/22:1 or C18:1(9c)/22:1(13c)
             standard = re.match(
                 r'[Cc]?(\d+:\d+(?:\([^)]*\))?)\s*/\s*(\d+:\d+(?:\([^)]*\))?)',
                 fragment
@@ -219,7 +239,7 @@ class MartiniLipidParser:
             if standard:
                 return "C" + standard.group(1), "C" + standard.group(2)
 
-            # ── Single chain (lyso) ───────────────────────────────────────────
+            # Single chain (lyso)
             single = re.match(r'[Cc](\d+:\d+(?:\([^)]*\))?)', fragment)
             if single:
                 return "C" + single.group(1), None
@@ -244,7 +264,6 @@ class MartiniLipidParser:
                 ("galactosylceramide",                "Galactosylceramide"),
                 ("ceramide",                          "Ceramide"),
                 ("ganglioside",                       "Ganglioside"),
-                ("cholesteryl ester",                 "Cholesteryl ester"),
                 ("cholesterol",                       "Cholesterol"),
                 ("ergosterol",                        "Ergosterol"),
                 ("diacylglycerol",                    "Diacylglycerol (DAG)"),
@@ -267,69 +286,116 @@ class MartiniLipidParser:
             except Exception:
                 return results
 
-            if "@COBY" not in content:
-                return results
+            # ── @COBY-annotated lipids (phospholipids, sphingolipids, etc.) ──
+            if "@COBY" in content:
+                coby_matches = coby_pat.findall(content)
 
-            coby_matches = coby_pat.findall(content)
+                blocks = re.split(r'(?=;{2,}\s*Martini lipid topology for\s)', content)
+                block_by_name: Dict[str, str] = {}
+                for block in blocks:
+                    m = title_pat.search(block)
+                    if m:
+                        block_by_name[m.group(2)] = block
 
-            # Split into per-lipid blocks on the title comment line
-            blocks = re.split(r'(?=;{2,}\s*Martini lipid topology for\s)', content)
-            block_by_name: Dict[str, str] = {}
-            for block in blocks:
-                m = title_pat.search(block)
-                if m:
-                    block_by_name[m.group(2)] = block
+                for moltype_raw, head_raw, tail1_beads, tail2_beads, name in coby_matches:
+                    block = block_by_name.get(name, content)
 
-            for moltype_raw, head_raw, tail1_beads, tail2_beads, name in coby_matches:
-                block = block_by_name.get(name, content)
+                    tail1_str = tail2_str = None
+                    title_m = title_pat.search(block)
+                    if title_m:
+                        tail1_str, tail2_str = parse_tails_from_title(title_m.group(1))
+                    if not tail1_str:
+                        tail1_str = beads_to_acyl(tail1_beads)
+                    if not tail2_str:
+                        tail2_str = beads_to_acyl(tail2_beads) if tail2_beads else "None"
 
-                # Tails
-                tail1_str = tail2_str = None
-                title_m = title_pat.search(block)
-                if title_m:
-                    tail1_str, tail2_str = parse_tails_from_title(title_m.group(1))
-                if not tail1_str:
-                    tail1_str = beads_to_acyl(tail1_beads)
-                if not tail2_str:
-                    tail2_str = beads_to_acyl(tail2_beads) if tail2_beads else "None"
+                    head_label = None
+                    desc_m = desc_pat.search(block)
+                    if desc_m:
+                        head_label = headgroup_from_description(desc_m.group(1))
+                    if not head_label:
+                        head_label = HEADGROUP_MAP.get(head_raw.upper(), f"Headgroup ({head_raw})")
 
-                # Headgroup
+                    linker_label = MOLTYPE_LINKER_MAP.get(
+                        moltype_raw.lower(), f"Unknown ({moltype_raw})"
+                    )
+                    moltype_label = MOLTYPE_LABEL_MAP.get(moltype_raw.lower(), moltype_raw)
+
+                    results[name] = {
+                        "resname":     name,
+                        "moltype":     moltype_label,
+                        "head":        head_label,
+                        "linker":      linker_label,
+                        "tail1":       tail1_str,
+                        "tail2":       tail2_str,
+                        "tail1_beads": tail1_beads,
+                        "tail2_beads": tail2_beads,
+                    }
+
+            # ── Sterol fallback — catch sterols that carry no @COBY tag ──
+            # Sterols in martini2, martini_v2.2, and martini3 often lack @COBY.
+            # Detect them by moleculetype name and synthesize a proper Sterol entry.
+            for match in sterol_moltype_pat.finditer(content):
+                name = match.group(1).upper()
+                if name not in KNOWN_STEROLS or name in results:
+                    continue  # skip non-sterols and already-parsed entries
+
                 head_label = None
-                desc_m = desc_pat.search(block)
+                desc_m = desc_pat.search(content)
                 if desc_m:
                     head_label = headgroup_from_description(desc_m.group(1))
                 if not head_label:
-                    head_label = HEADGROUP_MAP.get(head_raw.upper(), f"Headgroup ({head_raw})")
-
-                # Linker and moltype label
-                linker_label = MOLTYPE_LINKER_MAP.get(
-                    moltype_raw.lower(), f"Unknown ({moltype_raw})"
-                )
-                moltype_label = MOLTYPE_LABEL_MAP.get(moltype_raw.lower(), moltype_raw)
+                    head_label = HEADGROUP_MAP.get(name, f"Sterol ({name})")
 
                 results[name] = {
                     "resname":     name,
-                    "moltype":     moltype_label,
+                    "moltype":     "Sterol",
                     "head":        head_label,
-                    "linker":      linker_label,
-                    "tail1":       tail1_str,
-                    "tail2":       tail2_str,
-                    "tail1_beads": tail1_beads,
-                    "tail2_beads": tail2_beads,
+                    "linker":      "Sterol backbone",
+                    "tail1":       "None",
+                    "tail2":       "None",
+                    "tail1_beads": "",
+                    "tail2_beads": "",
                 }
+
             return results
 
         # ── Main: follow the same include chain as scanfflipids() ─────────
 
         ff_file = fffile + ".itp"
-        includes = self.parseincludes(ff_file)   # reuse existing method
+        includes = self.parseincludes(ff_file)
 
         lipid_detail_map: Dict[str, Dict[str, str]] = {}
 
         for incpath in includes:
-            # Same filename keyword filter as extractmoleculetypessinglefile()
             if self.extractmoleculetypes(incpath):
                 lipid_detail_map.update(parse_itp_for_lipids(incpath))
+
+        # ── Apply forcefield-specific sterol label overrides ──────────────
+        # Normalize martini_v2.x variants to "martini2" so all v2 forcefields
+        # share the same override block unless explicitly listed.
+        _ff_key = fffile if fffile in STEROL_OVERRIDES else (
+            "martini2" if fffile.startswith("martini_v2") else fffile
+        )
+        ff_overrides = STEROL_OVERRIDES.get(_ff_key, {})
+
+        for resname, (head_label, moltype_label) in ff_overrides.items():
+            if resname in lipid_detail_map:
+                # Patch labels on an entry already found during parsing
+                lipid_detail_map[resname]["head"]    = head_label
+                lipid_detail_map[resname]["moltype"] = moltype_label
+            else:
+                # Synthesize a stub entry (e.g. CHOL2 absent from parsed files)
+                lipid_detail_map[resname] = {
+                    "resname":     resname,
+                    "moltype":     moltype_label,
+                    "head":        head_label,
+                    "linker":      "Sterol backbone",
+                    "tail1":       "None",
+                    "tail2":       "None",
+                    "tail1_beads": "",
+                    "tail2_beads": "",
+                }
 
         self.detailedlipidmap = lipid_detail_map
         return lipid_detail_map
@@ -340,12 +406,15 @@ class MembraneBuilder:
         self.entries = []
         self.config = Config()
     
-    def load_membrane_template_from_csv(self, uploaded_file, available_lipids: list):
+    def load_membrane_template_from_csv(self, uploaded_file, available_lipids: list, gui):
         try:
             with open(uploaded_file, "r", encoding="utf-8") as f:
                 content = f.read()
         except Exception as e:
-            st.error(f"Could not read template file: {e}")
+            if gui:
+                st.error(f"Could not read template file: {e}")
+            else:
+                print(f"Could not read template file: {e}")
             return
 
         # --- Split into named blocks by lines starting with '#' ---

@@ -34,7 +34,7 @@ class Config:
     membrane_string: str = ""
 
 
-    # save GUI values into Config
+
     abs_lip_vals: bool = False
     lipid_entries_relative: list = None
     lipid_entries_absolute: list = None

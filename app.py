@@ -6,15 +6,14 @@ import argparse
 from pathlib import Path 
 sys.path.insert(0, 'src')
 from datetime import datetime
-from config import *
-from builders import *
-from inserter import *
-from topology import *
-from utils import *
-from gui import *
-from main import *
-from global_info import *
-
+from config import Config
+from builders import MartiniLipidParser,MembraneBuilder
+from inserter import ProteinInserter
+from topology import TopologyEditor, ForceFieldManager
+from global_info import GlobalInfo
+from main import MainBuilder
+from gui import Gui
+from filemanager import FileManager
 
 class OpenBuilderApp:
     def __init__(self):
@@ -98,8 +97,12 @@ class OpenBuilderApp:
             os.makedirs(user_inputs_dir, exist_ok=True)
 
             self.config.selected_ff = st.session_state.get("selected_ff", "martini_v3")
-            self.config.pdb_path = st.session_state.get("pdb_path", "")
-            self.config.itp_path = st.session_state.get("itp_path", "")
+            if self.config.selected_module != "membrane":
+                self.config.pdb_path = st.session_state.get("pdb_path", "")
+                self.config.itp_path = st.session_state.get("itp_path", "")
+            else:
+                self.config.pdb_path = ""
+                self.config.itp_path = ""
             self.config.template_path = st.session_state.get("template_path")
             # Move uploaded files into project folder
             if self.config.pdb_path and os.path.exists(self.config.pdb_path):
@@ -138,6 +141,10 @@ class OpenBuilderApp:
                 else:
                     st.error("❌ No membrane entries found!")
                     st.stop()
+                if self.config.selected_module != "membrane":
+                    if self.config.pdb_path == "" or self.config.itp_path == "":
+                        st.error("❌ No Protein files provided!")
+                        st.stop
 
 
                 self.mainbuilder.execute_build(
@@ -167,16 +174,15 @@ class OpenBuilderApp:
 
 
 
-if __name__ == "__main__":
+def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--no-gui", action="store_true")
     parser.add_argument("json_file", nargs="?")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.no_gui:
         if not args.json_file:
             raise ValueError("Please provide a JSON file: python app.py --no-gui file.json")
-
         config = Config.from_json(args.json_file)
         builder = MainBuilder()
         builder.execute_build(
@@ -185,7 +191,9 @@ if __name__ == "__main__":
             config=config,
             gui=False
         )
-
     else:
         app = OpenBuilderApp()
         app.run()
+
+if __name__ == "__main__":
+    sys.exit(main())
