@@ -65,7 +65,7 @@ class MainBuilder:
             # --------------------------------------------------------------
             # Step 2 – Build shared params dict for this template
             # --------------------------------------------------------------
-            itp_input_ff = f"include:{self.global_info.toppar_folder_path}/{self.config.selected_ff}.itp"
+            itp_input_ff = f"include:{self.global_info.toppar_folder_path}/{self.config.selected_ff}.top"
             self.builder.config = self.config
             self.config.membrane_string = self.builder.create_membrane_str()
             chol_import_needed = self.builder.check_chol_import()

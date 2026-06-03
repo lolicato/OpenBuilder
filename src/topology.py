@@ -107,7 +107,7 @@ class TopologyEditor:
 
 class ForceFieldManager:
     def get_forcefield_names(self, toppar_dir: str) -> list:
-        return [os.path.splitext(f)[0] for f in os.listdir(toppar_dir) if f.endswith('.itp')]
+        return [os.path.splitext(f)[0] for f in os.listdir(toppar_dir) if f.endswith('.top')]
 
     def copy_ff_folder(self, ff_name: str, destination: str):
         src_folder = os.path.join("toppar", ff_name)

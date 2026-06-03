@@ -53,10 +53,10 @@ class Gui:
         
         self.box_params()
         self.builder.setup_lipids(self.config.selected_ff)    
-        ff_key = f"{self.config.selected_ff}.itp"
+        ff_key = f"{self.config.selected_ff}.top"
         available_lipids = self.parser.lipidmap.get(ff_key, [])
         all_lipids = available_lipids
-        if not available_lipids and not st.session_state.imported_lipids:
+        if not available_lipids:
             st.error("No lipids found")
         
         st.subheader("Membrane")

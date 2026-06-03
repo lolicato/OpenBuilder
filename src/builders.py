@@ -81,7 +81,7 @@ class MartiniLipidParser:
     
     def scanfflipids(self, fffile: str) -> List[str]:
         """Scan FF .itp + includes for lipids."""
-        ff_file = fffile + ".itp"
+        ff_file = fffile + ".top"
         includes = self.parseincludes(ff_file)
         fflipids = set()
         for incpath in includes:
