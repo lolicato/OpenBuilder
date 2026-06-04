@@ -7,6 +7,7 @@ If you use OpenMembraneBuilder in your research, please cite:
   author  = {Jonathan Thelen, Melanie Koenig, Fabio Lolicato},
   title   = {OpenMembraneBuilder: A Community-Driven Open-Source Builder for Membrane Simulations},
   year    = {2026},
+  doi     = {10.5281/zenodo.20315802},
   url     = {https://github.com/lolicato/OpenMembraneBuilder},
   note    = {GUI and CLI builder for Martini coarse-grained membrane systems}
 }
