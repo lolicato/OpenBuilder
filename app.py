@@ -15,7 +15,7 @@ from main import MainBuilder
 from gui import Gui
 from filemanager import FileManager
 
-class OpenBuilderApp:
+class OpenMembraneBuilderApp:
     def __init__(self):
         self.global_info = GlobalInfo()
         self.config = Config()
@@ -68,7 +68,7 @@ class OpenBuilderApp:
             self.config.lipid_entries_absolute = st.session_state.get("lipid_entries_absolute", [])
 
             timestamp =  datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            main_folder_name = f"OpenBuilder-{timestamp}"
+            main_folder_name = f"OpenMembraneBuilder-{timestamp}"
 
             outputs_dir = Path("outputs")
             outputs_dir.mkdir(parents=True, exist_ok=True)
@@ -192,7 +192,7 @@ def main(argv=None):
             gui=False
         )
     else:
-        app = OpenBuilderApp()
+        app = OpenMembraneBuilderApp()
         app.run()
 
 if __name__ == "__main__":

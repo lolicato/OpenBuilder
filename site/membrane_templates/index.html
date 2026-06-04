@@ -27,7 +27,7 @@
     
     
       
-        <title>Membrane Templates - OpenBuilder</title>
+        <title>Membrane Templates - OpenMembraneBuilder</title>
       
     
     
@@ -94,7 +94,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="OpenBuilder" class="md-header__button md-logo" aria-label="OpenBuilder" data-md-component="logo">
+    <a href=".." title="OpenMembraneBuilder" class="md-header__button md-logo" aria-label="OpenMembraneBuilder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -108,7 +108,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            OpenBuilder
+            OpenMembraneBuilder
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -407,13 +407,13 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="OpenBuilder" class="md-nav__button md-logo" aria-label="OpenBuilder" data-md-component="logo">
+    <a href=".." title="OpenMembraneBuilder" class="md-nav__button md-logo" aria-label="OpenMembraneBuilder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
-    OpenBuilder
+    OpenMembraneBuilder
   </label>
   
   <ul class="md-nav__list" data-md-scrollfix>
@@ -1045,7 +1045,7 @@
 
 
 <h1 id="membrane-templates">Membrane Templates<a class="headerlink" href="#membrane-templates" title="Permanent link">&para;</a></h1>
-<p>OpenBuilder supports loading membrane compositions from <strong>CSV</strong> or <strong>OpenBuilder template (<code>.ob</code>)</strong> files. This feature allows users to quickly generate reproducible membrane systems and batch-create multiple membrane compositions from a single file.</p>
+<p>OpenMembraneBuilder supports loading membrane compositions from <strong>CSV</strong> or <strong>OpenMembraneBuilder template (<code>.ob</code>)</strong> files. This feature allows users to quickly generate reproducible membrane systems and batch-create multiple membrane compositions from a single file.</p>
 <hr />
 <h2 id="complete-example">Complete Example<a class="headerlink" href="#complete-example" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code># ExampleMembrane1
@@ -1078,7 +1078,7 @@ CHOL,0.15,0.60,0.40,0.40
 <p>If only a single membrane composition is required, the name line can be omitted and the file may be used as a standard CSV.</p>
 <hr />
 <h2 id="template-format">Template Format<a class="headerlink" href="#template-format" title="Permanent link">&para;</a></h2>
-<p>Lines starting with <code>;</code> are treated as comments and ignored by OpenBuilder.
+<p>Lines starting with <code>;</code> are treated as comments and ignored by OpenMembraneBuilder.
 Each lipid is defined on a separate line:</p>
 <div class="highlight"><pre><span></span><code>; resname,upper_leaflet,lower_leaflet,apl_upper,apl_lower
 </code></pre></div>
@@ -1163,7 +1163,7 @@ CHOL,0.50,0.60,0.40,0.40
 <p>or</p>
 <div class="highlight"><pre><span></span><code>POPC,0.70,0.30,,
 </code></pre></div>
-<p>OpenBuilder assigns <strong>0.60 nm²</strong> automatically.</p>
+<p>OpenMembraneBuilder assigns <strong>0.60 nm²</strong> automatically.</p>
 <hr />
 <h2 id="ratios-and-absolute-counts">Ratios and Absolute Counts<a class="headerlink" href="#ratios-and-absolute-counts" title="Permanent link">&para;</a></h2>
 <p>Two composition modes are supported.</p>
@@ -1181,7 +1181,7 @@ DOPC,30,70
 </div>
 <hr />
 <h2 id="supported-file-types">Supported File Types<a class="headerlink" href="#supported-file-types" title="Permanent link">&para;</a></h2>
-<p>OpenBuilder accepts:</p>
+<p>OpenMembraneBuilder accepts:</p>
 <ul>
 <li><code>.csv</code></li>
 <li><code>.ob</code></li>

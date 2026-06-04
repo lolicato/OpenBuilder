@@ -1,6 +1,6 @@
-# OpenBuilder-v1.2.0-dev
+# OpenMembraneBuilder-v1.2.0-dev
 
-**OpenBuilder** is a graphical and command-line tool for building Martini coarse-grained membrane and membrane–protein systems.
+**OpenMembraneBuilder** is a graphical and command-line tool for building Martini coarse-grained membrane and membrane–protein systems.
 
 It supports:
 
@@ -26,7 +26,7 @@ GUI input → Config object → System build → config.json → ZIP archive
 Each build creates a self-contained project folder:
 
 ```
-outputs/OpenBuilder-YYYY-MM-DD_HH-MM-SS/
+outputs/OpenMembraneBuilder-YYYY-MM-DD_HH-MM-SS/
 ├── config.json
 ├── user_inputs/
 ├── simulations/
@@ -39,7 +39,7 @@ outputs/OpenBuilder-YYYY-MM-DD_HH-MM-SS/
 A compressed archive is also created automatically:
 
 ```
-downloads/OpenBuilder-YYYY-MM-DD_HH-MM-SS.zip
+downloads/OpenMembraneBuilder-YYYY-MM-DD_HH-MM-SS.zip
 ```
 
 This archive contains everything needed to reproduce the system, including:

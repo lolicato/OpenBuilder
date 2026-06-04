@@ -10,7 +10,7 @@ This file stores the full build configuration and allows full reproducibility of
 
 ```json
 {
-    "output_name": "outputs/OpenBuilder-2026-05-15_00-47-52",
+    "output_name": "outputs/OpenMembraneBuilder-2026-05-15_00-47-52",
     "selected_ff": "martini_v3",
     "base_folder": "",
     "selected_module": "membrane_with_cg_protein",
@@ -21,8 +21,8 @@ This file stores the full build configuration and allows full reproducibility of
     "solvation": "solv:W pos:NA neg:CL salt_molarity:0.18",
     "salt_molarity": 0.18,
     "n_systems": 4,
-    "pdb_path": "outputs/OpenBuilder-2026-05-15_00-47-52/simulations/R0004/protein.pdb",
-    "itp_path": "outputs/OpenBuilder-2026-05-15_00-47-52/toppar/protein.itp",
+    "pdb_path": "outputs/OpenMembraneBuilder-2026-05-15_00-47-52/simulations/R0004/protein.pdb",
+    "itp_path": "outputs/OpenMembraneBuilder-2026-05-15_00-47-52/toppar/protein.itp",
     "abs_lip_vals": false,
     "entries": [
         [
@@ -193,5 +193,5 @@ Example:
 ## 🚀 Reuse
 
 ```bash
-python app.py --no-gui outputs/OpenBuilder-xxxx/config.json
+python app.py --no-gui outputs/OpenMembraneBuilder-xxxx/config.json
 ```

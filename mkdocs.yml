@@ -1,7 +1,7 @@
-site_name: OpenBuilder
+site_name: OpenMembraneBuilder
 site_description: GUI and CLI builder for Martini coarse-grained membrane/protein systems
 site_author: Fabio
-repo_name: OpenBuilder
+repo_name: OpenMembraneBuilder
 
 theme:
   name: material

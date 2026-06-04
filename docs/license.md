@@ -1,6 +1,6 @@
 # License
 
-OpenBuilder is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+OpenMembraneBuilder is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 
 ```text
 Copyright (C) 2026 Fabio Lolicato

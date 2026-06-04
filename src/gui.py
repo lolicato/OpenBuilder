@@ -44,7 +44,7 @@ class Gui:
         
 
     def run(self):
-        '''Executes all functions that create the graphical interphase of the OpenBuilder'''
+        '''Executes all functions that create the graphical interphase of the OpenMembraneBuilder'''
         self.create_layout()
         self.choose_module()
         self.create_folder_name_input()
@@ -84,9 +84,9 @@ class Gui:
 
     def create_layout(self):
         ''''''
-        st.set_page_config(page_title="OpenBuilder", layout="wide")
+        st.set_page_config(page_title="OpenMembraneBuilder", layout="wide")
         st.markdown(f"""
-            <h1 style='color: red; font-size: 36px;'>🚀 OpenBuilder {self.global_info.version}</h1>
+            <h1 style='color: red; font-size: 36px;'>🚀 OpenMembraneBuilder {self.global_info.version}</h1>
         """, unsafe_allow_html=True)
 
     def choose_module(self):
@@ -171,7 +171,7 @@ class Gui:
             #### Membrane Template
             Upload a membrane template (`.ob` or `.csv`) to automatically load membrane compositions.
             
-            📖 See the [Membrane Template Documentation](https://lolicato.github.io/OpenBuilder/membrane_templates/) for format specifications and examples.
+            📖 See the [Membrane Template Documentation](https://lolicato.github.io/OpenMembraneBuilder/membrane_templates/) for format specifications and examples.
             """
             )
 

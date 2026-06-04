@@ -1,6 +1,6 @@
 # GUI Usage
 
-OpenBuilder can be launched using Streamlit:
+OpenMembraneBuilder can be launched using Streamlit:
 
 ```bash
 streamlit run app.py

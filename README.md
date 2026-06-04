@@ -1,15 +1,15 @@
-# 🚀 OpenBuilder-v1.2.0-dev
+# 🚀 OpenMembraneBuilder-v1.2.0-dev
 
 ![Version](https://img.shields.io/badge/version-v1.2.0-red)
 ![Python](https://img.shields.io/badge/python-3.10-blue)
 ![Status](https://img.shields.io/badge/status-active-success)
 
-🌐 **📖 Documentation:** https://lolicato.github.io/OpenBuilder  
+🌐 **📖 Documentation:** https://lolicato.github.io/OpenMembraneBuilder  
 👉 *Full user guide, and API reference available online*
 
 ---
 
-**OpenBuilder** is a modern **GUI + CLI toolkit for building MARTINI coarse-grained membrane and membrane–protein systems**, powered by COBY.
+**OpenMembraneBuilder** is a modern **GUI + CLI toolkit for building MARTINI coarse-grained membrane and membrane–protein systems**, powered by COBY.
 
 It combines:
 - 🧬 **MDAnalysis** for structure handling  
@@ -51,15 +51,15 @@ GUI → Config → Build → config.json → ZIP → CLI reuse
 
 
 ```bash
-git clone https://github.com/lolicato/OpenBuilder.git
-cd OpenBuilder
+git clone https://github.com/lolicato/OpenMembraneBuilder.git
+cd OpenMembraneBuilder
 ```
 
 ### Create environment
 
 ```bash
 conda env create -f environment.yml
-conda activate OpenBuilder
+conda activate OpenMembraneBuilder
 ```
 
 ---
@@ -87,7 +87,7 @@ python app.py --no-gui config.json
 Each build creates a self-contained project:
 
 ```text
-outputs/OpenBuilder-xxxx/
+outputs/OpenMembraneBuilder-xxxx/
 ├── config.json
 ├── user_inputs/
 ├── simulations/
@@ -120,7 +120,7 @@ This allows:
 ## 📚 Documentation
 
 👉 **Online docs (recommended):**  
-https://lolicato.github.io/OpenBuilder  
+https://lolicato.github.io/OpenMembraneBuilder  
 
 👉 Local preview:
 
@@ -143,7 +143,7 @@ We welcome:
 
 ## 📄 Licensing
 
-    OpenBuilder is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+    OpenMembraneBuilder is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 
     Copyright (C) 2026  Fabio Lolicato
 
@@ -161,7 +161,7 @@ We welcome:
 
 ## 🙏 Acknowledgements
 
-OpenBuilder builds upon:
+OpenMembraneBuilder builds upon:
 
 - COBY  
 - MDAnalysis  

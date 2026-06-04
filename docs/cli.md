@@ -1,6 +1,6 @@
 # CLI Usage
 
-OpenBuilder can run without the GUI using a saved JSON configuration.
+OpenMembraneBuilder can run without the GUI using a saved JSON configuration.
 
 ```bash
 python app.py --no-gui config.json
@@ -34,7 +34,7 @@ Build your system once. This generates a project folder with a `config.json`.
 ### 2. Re-run using CLI
 
 ```bash
-python app.py --no-gui outputs/OpenBuilder-xxxx/config.json
+python app.py --no-gui outputs/OpenMembraneBuilder-xxxx/config.json
 ```
 
 ---

@@ -1,6 +1,6 @@
-# Contributing to OpenBuilder
+# Contributing to OpenMembraneBuilder
 
-OpenBuilder is an open-source community-driven platform focused on reproducible, extensible, and collaborative scientific workflows and infrastructure.
+OpenMembraneBuilder is an open-source community-driven platform focused on reproducible, extensible, and collaborative scientific workflows and infrastructure.
 
 We welcome contributions from developers, researchers, testers, and designers.
 
@@ -44,7 +44,7 @@ The project is designed to evolve modularly, and community-developed components 
 
 # Academic Contribution and Authorship
 
-OpenBuilder is developed with an open-science philosophy.
+OpenMembraneBuilder is developed with an open-science philosophy.
 
 Major contributors to the project may be recognized through authorship in associated academic manuscripts and preprints, depending on the scope and significance of their contributions.
 
@@ -66,7 +66,7 @@ This creates a transparent and evolving record of community contributions.
 
 As the platform matures and stabilizes, we plan to submit an associated manuscript to a peer-reviewed scientific journal (e.g. methods- or infrastructure-oriented journals).
 
-The goal is to establish OpenBuilder as:
+The goal is to establish OpenMembraneBuilder as:
 
 - a robust scientific platform
 - a reproducible open framework

@@ -1,6 +1,6 @@
 # Membrane Templates
 
-OpenBuilder supports loading membrane compositions from **CSV** or **OpenBuilder template (`.ob`)** files. This feature allows users to quickly generate reproducible membrane systems and batch-create multiple membrane compositions from a single file.
+OpenMembraneBuilder supports loading membrane compositions from **CSV** or **OpenMembraneBuilder template (`.ob`)** files. This feature allows users to quickly generate reproducible membrane systems and batch-create multiple membrane compositions from a single file.
 
 ---
 
@@ -51,7 +51,7 @@ If only a single membrane composition is required, the name line can be omitted 
 
 ## Template Format
 
-Lines starting with `;` are treated as comments and ignored by OpenBuilder.
+Lines starting with `;` are treated as comments and ignored by OpenMembraneBuilder.
 Each lipid is defined on a separate line:
 
 ```text
@@ -125,7 +125,7 @@ or
 POPC,0.70,0.30,,
 ```
 
-OpenBuilder assigns **0.60 nm²** automatically.
+OpenMembraneBuilder assigns **0.60 nm²** automatically.
 
 ---
 
@@ -155,7 +155,7 @@ DOPC,30,70
 
 ## Supported File Types
 
-OpenBuilder accepts:
+OpenMembraneBuilder accepts:
 
 - `.csv`
 - `.ob`
