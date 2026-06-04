@@ -1,12 +1,12 @@
-# 🚀 OpenBuilder
+# 🚀 OpenMembraneBuilder
 
 ![Version](https://img.shields.io/badge/version-v1.0.4--dev-red)
 ![Python](https://img.shields.io/badge/python-3.10-blue)
 ![Status](https://img.shields.io/badge/status-active-success)
 
-**OpenBuilder** is a modern **GUI + CLI toolkit for building MARTINI coarse-grained membrane and membrane–protein systems**, powered by COBY.
+**OpenMembraneBuilder** is a modern **GUI + CLI toolkit for building MARTINI coarse-grained membrane and membrane–protein systems**, powered by COBY.
 
-🌐 **Documentation:** https://lolicato.github.io/OpenBuilder
+🌐 **Documentation:** https://lolicato.github.io/OpenMembraneBuilder
 
 It combines:
 - 🧬 **MDAnalysis** for structure handling  
@@ -47,22 +47,22 @@ GUI → Config → Build → config.json → ZIP → CLI reuse
 ### Clone the repository
 
 ```bash
-git clone https://github.com/lolicato/OpenBuilder.git
-cd OpenBuilder
+git clone https://github.com/lolicato/OpenMembraneBuilder.git
+cd OpenMembraneBuilder
 ```
 
 ### (Optional) Development branch
 
 ```bash
-git clone -b dev https://github.com/lolicato/OpenBuilder.git
-cd OpenBuilder
+git clone -b dev https://github.com/lolicato/OpenMembraneBuilder.git
+cd OpenMembraneBuilder
 ```
 
 ### Create environment
 
 ```bash
 conda env create -f environment.yml
-conda activate OpenBuilder-dev
+conda activate OpenMembraneBuilder-dev
 ```
 
 ---
@@ -80,7 +80,7 @@ streamlit run app.py
 ### CLI mode
 
 ```bash
-python app.py --no-gui outputs/OpenBuilder-xxxx/config.json
+python app.py --no-gui outputs/OpenMembraneBuilder-xxxx/config.json
 ```
 
 ---
@@ -90,7 +90,7 @@ python app.py --no-gui outputs/OpenBuilder-xxxx/config.json
 Each build creates a self-contained project:
 
 ```text
-outputs/OpenBuilder-xxxx/
+outputs/OpenMembraneBuilder-xxxx/
 ├── config.json
 ├── user_inputs/
 ├── simulations/
@@ -124,7 +124,7 @@ This allows:
 
 Full documentation available online:
 
-👉 https://lolicato.github.io/OpenBuilder
+👉 https://lolicato.github.io/OpenMembraneBuilder
 
 Or run locally:
 
@@ -155,7 +155,7 @@ Open-source release planned after first publication.
 
 ## 🙏 Acknowledgements
 
-OpenBuilder builds upon:
+OpenMembraneBuilder builds upon:
 
 - COBY  
 - MDAnalysis  

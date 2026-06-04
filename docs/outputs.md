@@ -1,6 +1,6 @@
 # Output Structure
 
-OpenBuilder writes all builds into the `outputs/` directory.
+OpenMembraneBuilder writes all builds into the `outputs/` directory.
 
 ---
 
@@ -9,7 +9,7 @@ OpenBuilder writes all builds into the `outputs/` directory.
 Each build creates a self-contained project:
 
 ```
-outputs/OpenBuilder-YYYY-MM-DD_HH-MM-SS/
+outputs/OpenMembraneBuilder-YYYY-MM-DD_HH-MM-SS/
 ├── config.json
 ├── user_inputs/
 ├── simulations/
@@ -85,7 +85,7 @@ Contains simulation parameter files:
 A compressed copy of the entire project is automatically created:
 
 ```
-downloads/OpenBuilder-YYYY-MM-DD_HH-MM-SS.zip
+downloads/OpenMembraneBuilder-YYYY-MM-DD_HH-MM-SS.zip
 ```
 
 This archive includes everything needed to reproduce the system.

@@ -5,31 +5,31 @@
 ### Stable version
 
 ```bash
-git clone https://github.com/lolicato/OpenBuilder.git
-cd OpenBuilder
+git clone https://github.com/lolicato/OpenMembraneBuilder.git
+cd OpenMembraneBuilder
 ```
 
 ### Development version (specific branch)
 
 ```bash
-git clone -b development https://github.com/lolicato/OpenBuilder.git
-cd OpenBuilder
+git clone -b development https://github.com/lolicato/OpenMembraneBuilder.git
+cd OpenMembraneBuilder
 ```
 
 ---
 
 ## 🐍 Conda Environment
 
-We recommend installing OpenBuilder using a Conda environment:
+We recommend installing OpenMembraneBuilder using a Conda environment:
 
 ```bash
 conda env create -f environment.yml
-conda activate OpenBuilder # activate OpenBuilder-dev for development version
+conda activate OpenMembraneBuilder # activate OpenMembraneBuilder-dev for development version
 ```
 
 ---
 
-## 🚀 Run OpenBuilder
+## 🚀 Run OpenMembraneBuilder
 
 ### GUI mode
 
@@ -40,7 +40,7 @@ streamlit run app.py
 ### CLI mode
 
 ```bash
-python app.py --no-gui outputs/OpenBuilder-xxxx/config.json
+python app.py --no-gui outputs/OpenMembraneBuilder-xxxx/config.json
 ```
 
 ---
