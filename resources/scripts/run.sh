@@ -72,7 +72,7 @@ for system_dir in ./*; do
             make_index_input "$CONFIG_FILE"
 
             gmx make_ndx \
-                -f em.gro \
+                -f system.gro \
                 -o index.ndx \
                 < inp.inp
 

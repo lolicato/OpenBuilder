@@ -188,7 +188,7 @@ class ProteinInserter:
                 "moleculeimport": molecule_import,
                 "solvation": config.solvation,
                 "selectedforcefield": config.selected_ff,
-                "itp_input": f"include:{self.global_info.toppar_folder_path}/{config.selected_ff}.itp",
+                "itp_input": f"include:{self.global_info.toppar_folder_path}/{config.selected_ff}.top",
             }
             run_coby_simulation(membrane_params, "", temp_dir)
             membrane_gro = os.path.join(temp_dir, "system.gro")
