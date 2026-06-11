@@ -1,6 +1,6 @@
-# 🚀 OpenMembraneBuilder-v1.2.0-dev
+# 🚀 OpenMembraneBuilder-v1.2.1
 
-![Version](https://img.shields.io/badge/version-v1.2.0-red)
+![Version](https://img.shields.io/badge/version-v1.2.1-green)
 ![Python](https://img.shields.io/badge/python-3.10-blue)
 ![Status](https://img.shields.io/badge/status-active-success)
 

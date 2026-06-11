@@ -362,7 +362,7 @@ class MartiniLipidParser:
 
         # ── Main: follow the same include chain as scanfflipids() ─────────
 
-        ff_file = fffile + ".itp"
+        ff_file = fffile + ".top"
         includes = self.parseincludes(ff_file)
 
         lipid_detail_map: Dict[str, Dict[str, str]] = {}

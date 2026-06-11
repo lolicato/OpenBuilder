@@ -144,7 +144,7 @@ class OpenMembraneBuilderApp:
                 if self.config.selected_module != "membrane":
                     if self.config.pdb_path == "" or self.config.itp_path == "":
                         st.error("❌ No Protein files provided!")
-                        st.stop
+                        st.stop()
 
 
                 self.mainbuilder.execute_build(
