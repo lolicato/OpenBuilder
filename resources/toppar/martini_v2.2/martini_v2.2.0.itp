@@ -107,6 +107,8 @@ AC1 72.0 0.000 A 0.0 0.0
 ; BIG particle type (to prevent freezing of water)
 BP4 72.0 0.000 A 0.0 0.0
 
+; DUMMY particle (massive, non-interacting
+DUM       0.00000        0.000   A       0.00000e-00     0.00000e-00
 
 [ nonbond_params ]
 

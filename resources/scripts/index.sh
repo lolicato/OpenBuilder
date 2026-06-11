@@ -16,10 +16,10 @@ make_index_input() {
     local solvents
     solvents=$(jq -r '.solvation' "$json_file" \
         | grep -oE 'solv:[^ ]+' \
-        | cut -d: -f2 \
-        | sed 's/^/r/' \
+        | awk -F: '{print "r"$2}' \
         | paste -sd'|' - \
         | sed 's/|/ | /g')
+
 
     local pos neg
     pos=$(jq -r '.solvation' "$json_file" | grep -oE 'pos:[^ ]+' | cut -d: -f2)

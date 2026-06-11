@@ -9,7 +9,7 @@ class TopologyEditor:
         self.config = Config()
     def edit_topology(self, ff_name: str, destination: str):
         topol_file = os.path.join(destination, "topol.top")
-        ff_itp = os.path.join(self.global_info.toppar_folder_path, f"{ff_name}.itp")
+        ff_itp = os.path.join(self.global_info.toppar_folder_path, f"{ff_name}.top")
 
         if not os.path.exists(ff_itp):
             print(f"{ff_itp} not found")
