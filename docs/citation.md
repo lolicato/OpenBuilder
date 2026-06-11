@@ -10,7 +10,7 @@ If you use OpenMembraneBuilder in your research, please cite:
   doi     = {10.5281/zenodo.20315802},
   url     = {https://github.com/lolicato/OpenMembraneBuilder},
   note    = {GUI and CLI builder for Martini coarse-grained membrane systems}
-}
+}}
 ```
 
 ## Website
