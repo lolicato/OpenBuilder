@@ -1,4 +1,4 @@
-# OpenMembraneBuilder-v1.1.0
+# OpenMembraneBuilder-v1.2.0-dev
 
 **OpenMembraneBuilder** is a graphical and command-line tool for building Martini coarse-grained membrane and membrane–protein systems.
 

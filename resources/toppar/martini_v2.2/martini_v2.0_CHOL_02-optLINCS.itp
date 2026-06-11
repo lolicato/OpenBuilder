@@ -1,0 +1,93 @@
+;;; 
+;;; OPTIMAL MARTINI 2 CHOLESTEROL WITH LINCS
+;;;
+;;; Based on the Martini 2.0 cholesterol model using virtual sites. The four dummy particles (DUM) 
+;;; which are decoupled from the interacting particles build an equimomental system facilitating constraints 
+;;; convergence using LINCS. The interacting particles of the steroid ring structure are constructed as 
+;;; virtual particles. For details, see:
+;;; B. Fábián, et al., chemRxiv (2022), https://doi.org/10.26434/chemrxiv-2022-t41rx
+;;; 
+;;; For the impact of nonconverged constraints, see:
+;;; S. Thallmair, et al., J. Phys. Chem. B 125, 9537 (2021), https://doi.org/10.1021/acs.jpcb.1c03665
+;;; 
+;;; For the Martini 2.0 cholesterol model using virtual sites, see:
+;;; M. N. Melo, et al., J. Chem. Phys. 143, 243152 (2015), https://doi.org/10.1063/1.4937783
+;;; 
+;;; Notes : The model was tested with time steps up to 30 fs. Standard LINCS settings (order = 4, 
+;;;         iter = 1) do not induce temperature gradients with time steps up to 20 fs. For a time 
+;;;         step of 30 fs, LINCS order should be increased to 6.
+;;; 
+;;;
+;;; Authors : Balazs Fabian (balazs.fabian@biophys.mpg.de)
+;;;           Sebastian Thallmair
+;;;           Gerhard Hummer
+;;; 
+;;; Last modified: 01.04.2022
+;;; 
+
+[ moleculetype ]
+; molname  nrexcl
+  CHOL2     1
+
+[ atoms ]
+; massive, non-interacting particles
+  1 DUM  1     CHOL    VOH  1    0.0   125.98  ; 1
+  2 DUM  1     CHOL    V2   2    0.0   36.83  ; 3
+  3 DUM  1     CHOL    V3   3    0.0   53.37  ; 4
+  4 DUM  1     CHOL    V1   4    0.0   98.82  ; 7
+; i type resnr residue atom cgnr charge mass
+  5 SP1  1     CHOL    ROH  5    0.0      0.0
+  6 SC1  1     CHOL    R1   6    0.0      0.0
+  7 SC3  1     CHOL    R2   7    0.0      0.0
+  8 SC1  1     CHOL    R3   8    0.0      0.0
+  9 SC1  1     CHOL    R4   9    0.0      0.0
+ 10 SC1  1     CHOL    R5  10    0.0      0.0
+ 11 SC1  1     CHOL    C1  11    0.0      0.0
+ 12  C1  1     CHOL    C2  12    0.0     72.0
+
+[ bonds ]
+; i  j  funct  length  force
+ 11 12  1      0.425    1250.0
+#ifdef FLEXIBLE
+  1  2  1    0.4560  1000000
+  1  3  1    0.5184  1000000
+  2  3  1    0.2795  1000000
+  4  2  1    0.4119  1000000
+  4  3  1    0.3206  1000000
+#else
+[ constraints ]
+  1  2  1    0.4560
+  1  3  1    0.5184
+  2  3  1    0.2795
+  4  2  1    0.4119
+  4  3  1    0.3206
+#endif
+
+[ dihedrals ]
+  5  7  8 11   2  -179.7  50
+
+[ virtual_sites3 ]
+; In-plane bead from frame 3-1-4
+  5   1  2  3   1  -0.1756  -0.0748
+; In-plane bead from frame 4-3-7 (bead 5)
+  7   2  3  4   1  0.0474  -0.2622
+  8   3  2  4   1  0.2795  0.0140
+  9   3  2  4   1  0.8100  0.7787
+ 11   4  2  3   1  -0.3054  -0.3399
+; Out-of-plane bead from frame 3-1-4 (bead 2)
+  6  7  5  8   4  0.5207  0.2882  -0.83824
+; Out-of-plane bead from frame 4-3-7 (bead 6)
+ 10  8  7 11   4  0.2287  0.4111   1.1531
+
+[ angles ]
+; i  j  k  funct  angle  force
+  8 11 12  2      180.0  25.0
+
+[ exclusions ]
+; i  j  k  ...
+    5  6  7  8  9 10 11
+    6  7  8  9 10 11
+    7  8  9 10 11
+    8  9 10 11
+    9 10 11
+   10 11

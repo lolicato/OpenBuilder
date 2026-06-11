@@ -95,7 +95,7 @@ rvdw                     = 1.1
 ; coupling should be done semiisotropic.
 
 tcoupl                   = v-rescale
-tc-grps                  = MEMB SOLV_ION
+tc-grps                  = SOLU SOLV
 tau_t                    = 1.0 1.0
 ref_t                    = 310 310
 
@@ -128,7 +128,7 @@ refcoord-scaling         = all
 ; Center of mass removal
 comm-mode                = Linear
 nstcomm                  = 100
-comm-grps                = MEMB SOLV_ION
+comm-grps                = SOLU SOLV
 
 ; MARTINI and CONSTRAINTS
 ; for ring systems and stiff bonds constraints are defined

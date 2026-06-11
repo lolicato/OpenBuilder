@@ -1,4 +1,4 @@
-# 🧾 OpenBuilder-v1.0.3-dev
+# 🧾 OpenMembraneBuilder-v1.0.3-dev
 
 ## Added
 
@@ -29,7 +29,7 @@
     * All builds are now created inside an `outputs/` directory
     * Each build is self-contained:
       ```
-      outputs/OpenBuilder-xxxx/
+      outputs/OpenMembraneBuilder-xxxx/
       ```
 
 * Input file handling

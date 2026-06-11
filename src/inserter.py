@@ -2,13 +2,14 @@ import random
 import numpy as np
 import os
 import shutil
-import streamlit as st
 import MDAnalysis as mda
 from scipy.spatial.transform import Rotation as R
 from pathlib import Path
+from datetime import datetime
 
 from builders import MartiniLipidParser, MembraneBuilder
 from utils import run_coby_simulation
+from global_info import GlobalInfo
 
 
 class ProteinInserter:
@@ -20,7 +21,8 @@ class ProteinInserter:
     """
 
     def __init__(self):
-        self.parser  = MartiniLipidParser(Path("toppar"))
+        self.global_info = GlobalInfo
+        self.parser  = MartiniLipidParser(Path(self.global_info.toppar_folder_path))
         self.builder = MembraneBuilder(self.parser)
 
     # ------------------------------------------------------------------
@@ -80,7 +82,7 @@ class ProteinInserter:
             config.protein_params[protein_key]["cy"] = round(cy, 4)
 
 
-    def insert_protein(self, pdb_path: str, system_path: str, config,
+    def insert_protein(self, pdb_path: str, system_path: str, config, molecule_import,
                    system_index: int = 0) -> str:
 
         protein_key = f"R{system_index + 1:04d}"
@@ -90,7 +92,7 @@ class ProteinInserter:
 
         # ---- Z placement ------------------------------------------------
         if config.z_method == "Height above Membrane":
-            upper_z_mem = self._measure_membrane_upper_z(system_path, config)
+            upper_z_mem = self._create_pure_membrane_system(system_path, config, molecule_import)
 
             cz = upper_z_mem / 10.0 + config.distance_to_mem - config.box_z / 2
             
@@ -164,13 +166,17 @@ class ProteinInserter:
     # Membrane Z measurement
     # ------------------------------------------------------------------
 
-    def _measure_membrane_upper_z(self, system_path: str, config) -> float:
+    def _create_pure_membrane_system(self, system_path: str, config, molecule_import) -> float:
         """Build a membrane-only temp system, measure upper-leaflet Z.
 
         Returns the mean Z of the top-10% lipid atoms in Angstrom.
         Falls back to 0.0 on any error.
         """
-        temp_dir = os.path.join(system_path, "temp_membrane_z")
+        now = datetime.now()
+
+        datetime_ext = now.strftime("%Y%m%d_%H%M%S")
+        random_int = random.randint(100000,999999)
+        temp_dir = os.path.join(system_path, f"temp_membrane_z-{datetime_ext}-{random_int}")
         os.makedirs(temp_dir, exist_ok=True)
         try:
             membrane_params = {
@@ -179,16 +185,16 @@ class ProteinInserter:
                 "boxz": config.box_z,
                 "box_type": config.box_type,
                 "membrane": config.membrane_string,
-                "moleculeimport": "",
+                "moleculeimport": molecule_import,
                 "solvation": config.solvation,
                 "selectedforcefield": config.selected_ff,
-                "itp_input": f"include:toppar/{config.selected_ff}.itp",
+                "itp_input": f"include:{self.global_info.toppar_folder_path}/{config.selected_ff}.itp",
             }
             run_coby_simulation(membrane_params, "", temp_dir)
             membrane_gro = os.path.join(temp_dir, "system.gro")
             return self._measure_membrane_z(membrane_gro, config)
         except Exception as e:
-            st.error(f"❌ Membrane Z measurement failed: {e}")
+            print(f"❌ Membrane Z measurement failed: {e}")
             return 0.0
         finally:
             if os.path.exists(temp_dir):
@@ -201,17 +207,17 @@ class ProteinInserter:
 
 
             lipid_names = [entry[0] for entry in
-                               config.entries]
+                               config.entries_current]
 
 
             if not lipid_names:
-                st.warning("No lipids defined → default Z=0")
+                print("No lipids defined → default Z=0")
                 return 0.0
 
             lipid_atoms = u.select_atoms(
                 "resname " + " ".join(lipid_names))
             if len(lipid_atoms) == 0:
-                st.warning(f"No atoms for {lipid_names} in {gro_path}")
+                print(f"No atoms for {lipid_names} in {gro_path}")
                 return 0.0
 
             z    = lipid_atoms.positions[:, 2]
@@ -222,7 +228,7 @@ class ProteinInserter:
             return upper_z
 
         except Exception as e:
-            st.error(f"❌ Membrane Z measurement failed: {e}")
+            print(f"❌ Membrane Z measurement failed: {e}")
             print(f"Debug: gro_path={gro_path}, "
                   f"exists={os.path.exists(gro_path)}")
             return 0.0

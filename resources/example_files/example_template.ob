@@ -1,0 +1,11 @@
+# PlasmaMembrane
+
+;resname,upper_leaflet,lower_leaflet,apl_upper,apl_lower
+POPC,0.70,0.30,0.61,0.61
+DOPC,0.30,0.70,
+
+# CholesterolRich
+
+;resname,upper_leaflet,lower_leaflet,apl_upper,apl_lower
+POPC,0.50,0.40,0.61,0.61
+CHOL,0.50,0.60,0.40,0.40

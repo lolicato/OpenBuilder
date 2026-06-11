@@ -1,14 +1,18 @@
 import os
 import shutil
 import re
-import streamlit as st
+from global_info import GlobalInfo
+from config import Config
 class TopologyEditor:
+    def __init__(self):
+        self.global_info = GlobalInfo()
+        self.config = Config()
     def edit_topology(self, ff_name: str, destination: str):
         topol_file = os.path.join(destination, "topol.top")
-        ff_itp = os.path.join("toppar", f"{ff_name}.itp")
+        ff_itp = os.path.join(self.global_info.toppar_folder_path, f"{ff_name}.itp")
 
         if not os.path.exists(ff_itp):
-            st.warning(f"{ff_itp} not found")
+            print(f"{ff_itp} not found")
             return
 
         with open(ff_itp, 'r') as f:
@@ -17,17 +21,22 @@ class TopologyEditor:
             topol_lines = f.readlines()[1:]
 
         def fix_include_path(line):
-            # Match: #include "some/path/file.itp"
             return re.sub(
                 r'(#include\s+")(.*?)(")',
                 lambda m: m.group(1) + "../../toppar/" + m.group(2) + m.group(3),
                 line
             )
 
-        fixed_itp_lines = [fix_include_path(line) for line in itp_lines]
+        def collapse_blank_lines(text: str) -> str:
+            # Reduce any sequence of 2+ consecutive blank lines to exactly one
+            return re.sub(r'\n{3,}', '\n\n', text)
+
+        fixed_itp_lines   = [fix_include_path(line) for line in itp_lines]
         fixed_topol_lines = [fix_include_path(line) for line in topol_lines]
 
         merged = "".join(fixed_itp_lines) + "\n" + "".join(fixed_topol_lines)
+        merged = collapse_blank_lines(merged)
+
         with open(topol_file, 'w') as f:
             f.write(merged)
 
@@ -95,9 +104,10 @@ class TopologyEditor:
                 f.writelines(updated_lines)
 
 
+
 class ForceFieldManager:
     def get_forcefield_names(self, toppar_dir: str) -> list:
-        return [os.path.splitext(f)[0] for f in os.listdir(toppar_dir) if f.endswith('.itp')]
+        return [os.path.splitext(f)[0] for f in os.listdir(toppar_dir) if f.endswith('.top')]
 
     def copy_ff_folder(self, ff_name: str, destination: str):
         src_folder = os.path.join("toppar", ff_name)
