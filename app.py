@@ -78,7 +78,7 @@ class OpenMembraneBuilderApp:
                 folder_name = main_folder_name
             self.config.selected_ff = st.session_state.get("selected_ff", "martini_v3")
             self.builder.setup_lipids(self.config.selected_ff)
-            ff_key = f"{self.config.selected_ff}.itp"
+            ff_key = f"{self.config.selected_ff}.top"
             available_lipids = self.parser.lipidmap.get(ff_key, [])
             self.config.output_name = str(outputs_dir / folder_name)
             if self.config.template_active:
