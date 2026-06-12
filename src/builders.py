@@ -406,7 +406,7 @@ class MembraneBuilder:
         self.entries = []
         self.config = Config()
     
-    def load_membrane_template_from_csv(self, uploaded_file, available_lipids: list, gui):
+    def load_membrane_template_from_csv(self, uploaded_file, available_lipids: list, gui=True):
         try:
             with open(uploaded_file, "r", encoding="utf-8") as f:
                 content = f.read()
