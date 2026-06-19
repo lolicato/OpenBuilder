@@ -1,13 +1,42 @@
-from dataclasses import dataclass
-
+from dataclasses import dataclass, field, asdict
+from typing import List, Dict, Any, Optional
 
 @dataclass
 class MartinizeConfig:
-    """Configuration for the Martinize2 coarse-graining step."""
-    input_pdb: str = ""
-    force_field: str = "martini_v3"
-    use_elastic_network: bool = False
-    elastic_bond_upper_cutoff: float = 0.9
-    elastic_force_constant: float = 500.0
-    output_prefix: str = "protein_cg"
-    # Add further martinize2 options here as needed
+    build_mode: str = "membrane_only"  # "membrane_only" or "protein_membrane"
+    protein_input_mode: str = "upload_cg"  # "upload_cg" or "martinize"
+    
+    # Already coarse-grained protein uploads
+    cg_pdb_path: str = ""
+    cg_itp_path: str = ""
+    
+    # Atomistic protein options
+    atomistic_source: str = "Upload PDB"  # "Upload PDB" or "Fetch from PDB database"
+    atomistic_pdb_path: str = ""
+    fetch_pdb_id: str = ""
+    
+    # Preprocessing flags
+    clean_structure: bool = True
+    selected_chains: List[str] = field(default_factory=list)
+    
+    # Mutation options
+    do_mutation: bool = False
+    mutation_chain: str = ""
+    mutation_residue_idx: Optional[int] = None  # resid
+    mutation_residue_name: str = ""
+    mutation_target: str = ""  # target 3-letter amino acid code
+    
+    # Martinize2 options
+    forcefield: str = "martini3001"  # "martini22", "martini3001", "martini3001-idp", etc.
+    secondary_structure_mode: str = "MDTraj DSSP"  # "MDTraj DSSP", "All coil", "None", "Custom/Precalculated"
+    custom_ss_string: str = ""
+    use_elastic_network: bool = True
+    elastic_lower: float = 0.5
+    elastic_upper: float = 0.9
+    elastic_force: float = 700.0
+    position_restraints: str = "none"  # "none", "backbone", "all"
+    cysteine_bridges: str = "auto"  # "auto", "detect", "none", etc.
+    extra_flags: str = ""
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
