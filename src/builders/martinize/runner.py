@@ -164,6 +164,7 @@ quit
         output_dir = os.path.abspath(output_dir)
         output_cg = os.path.join(output_dir, "protein_cg.pdb")
         output_top = os.path.join(output_dir, "protein.top")
+        output_itp = os.path.join(output_dir, "molecule_0.itp")
 
         cmd = [
             "martinize2",
@@ -213,7 +214,7 @@ quit
         if not os.path.exists(output_cg) or os.path.getsize(output_cg) == 0:
             raise RuntimeError("martinize2 did not output the coarse-grained structure file.")
 
-        return output_cg, output_top, cmd_str, result.stdout
+        return output_cg, output_top, output_itp, cmd_str, result.stdout
 
     def collect_output_files(self, output_dir: str) -> List[str]:
         files = []
@@ -323,7 +324,7 @@ quit
                     )
 
                 # 4. Martinize
-                cg_pdb, top_file, command_run, log_output = self.run_martinize(config, current_structure, output_dir)
+                cg_pdb, top_file, itp_file, command_run, log_output = self.run_martinize(config, current_structure, output_dir)
                 
                 # Write log file
                 log_path = os.path.join(output_dir, "martinize.log")
@@ -337,7 +338,7 @@ quit
                 results["outputs"] = {
                     "cg_pdb_path": cg_pdb,
                     "top_path": top_file,
-                    "itp_path": top_file,  # In martinize2, the itp references can be found, or the top itself contains the output
+                    "itp_path": itp_file,  # Need to think about how to do multiple chains
                     "command": command_run,
                     "log": log_output,
                     "zip_path": zip_path
