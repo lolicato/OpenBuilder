@@ -1,8 +1,12 @@
+import sys
+from pathlib import Path
+_ROOT = Path(__file__).resolve().parents[2]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
 import shutil
 import os
-from pathlib import Path
-from global_info import GlobalInfo
-
+from src.core.global_info import GlobalInfo
 class FileManager():
     def __init__(self):
         self.global_info = GlobalInfo()

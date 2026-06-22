@@ -1,31 +1,106 @@
+import sys
+from pathlib import Path
+from typing import List, Dict
 import os
+import pandas as pd
 import re
 import streamlit as st
-import pandas as pd
-from typing import List, Dict
-from pathlib import Path
-from config import Config
+_ROOT = Path(__file__).resolve().parents[3]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+from src.core.global_info import GlobalInfo
 
 
+class MembraneParser:
+    """Initializes and exposes lipid parsing for the membrane builder."""
+
+    def __init__(self):
+        self.global_info  = GlobalInfo()
+        self.lipid_parser = MartiniLipidParser(
+            Path(self.global_info.toppar_folder_path)   # already correct if GlobalInfo resolves it
+        )
+        self.membrane_builder = MembraneBuilder(self.lipid_parser)
+        
+
+    def get_force_fields(self) -> list[str]:
+        toppar = self.global_info.toppar_folder_path
+        return [
+            f.removesuffix(".top")
+            for f in os.listdir(toppar)
+            if f.endswith(".top")
+        ]
+
+    def get_available_lipids(self, selected_ff: str) -> list[str]:
+        self.membrane_builder.setup_lipids(selected_ff)
+        ff_key = f"{selected_ff}.top"
+        return self.lipid_parser.lipidmap.get(ff_key, [])
+
+    def build_lipid_map(self, selected_ff: str) -> dict:
+        return self.lipid_parser.buildlipidmap(selected_ff)
+
+    def load_membrane_template_from_csv(self, path: str, available_lipids: list, gui: bool = True):
+        return self.membrane_builder.load_membrane_template_from_csv(path, available_lipids, gui=gui)
+
+    def create_membrane_str(self, config) -> str:
+        self.membrane_builder.config = config
+        return self.membrane_builder.create_membrane_str(config)
+
+    def check_chol_import(self, config) -> str:
+        self.membrane_builder.config = config
+        return self.membrane_builder.check_chol_import()
+    
+
+class ForceFieldManager:
+    def get_forcefield_names(self, toppar_dir: str) -> list:
+        return [os.path.splitext(f)[0] for f in os.listdir(toppar_dir) if f.endswith('.top')]
+
+    def copy_ff_folder(self, ff_name: str, destination: str):
+        src_folder = os.path.join("toppar", ff_name)
+        dst_folder = os.path.join(destination, ff_name)
+        
+        src_itp = os.path.join("toppar", f"{ff_name}.itp")
+        dst_itp = os.path.join(destination, f"{ff_name}.itp")
+        
+        
+        if os.path.exists(dst_folder):
+            shutil.rmtree(dst_folder)
+        if os.path.exists(dst_itp):
+            os.remove(dst_itp)
+        
+        if os.path.exists(src_folder):
+            shutil.copytree(src_folder, dst_folder, dirs_exist_ok=True)
+        if os.path.exists(src_itp):
+            shutil.copy(src_itp, dst_itp)
+
+
+    def copy_mdp_files(self, ff_name: str, destination: str, system_type: str):
+        src_mdp = os.path.join("mdp", ff_name, system_type)
+        dst_mdp = os.path.join(destination, "mdp")
+        if os.path.exists(src_mdp):
+            os.makedirs(dst_mdp, exist_ok=True)
+            for file in os.listdir(src_mdp):
+                shutil.copy(os.path.join(src_mdp, file), os.path.join(dst_mdp, file))
 
 class MartiniLipidParser:
     
-    def __init__(self, toppardir: str = "resources/toppar"):
+    def __init__(self, toppardir: str = None):
+        if toppardir is None:
+            toppardir = Path(__file__).resolve().parents[3] / "resources" / "toppar"
         self.toppardir = Path(toppardir)
         self.forcefields: List[str] = []
         self.lipidmap: Dict[str, List[str]] = {}
         self.alllipids = set()
     
     def discoverforcefields(self) -> List[str]:
-        """FFs: Find .itp → strip .itp for sidebar."""
+        """FFs: Find .top → strip .itp for sidebar."""
         if not self.toppardir.exists():
             return []
         
-        pattern = "*.itp"
+        pattern = "*.top"
         itp_files = [f.name for f in self.toppardir.glob(pattern)]
         self.forcefields = [
-            re.sub(r'\.itp$', '', f) for f in itp_files
-            if "martini_v2.0" not in f.lower() and "lipid" not in f.lower()
+            f.replace(".top", "") for f in itp_files
+            #if "martini_v2" not in f.lower() and "lipid" not in f.lower()
         ]
         return sorted(self.forcefields)
     
@@ -404,7 +479,6 @@ class MembraneBuilder:
     def __init__(self, parser: MartiniLipidParser):
         self.parser = parser
         self.entries = []
-        self.config = Config()
     
     def load_membrane_template_from_csv(self, uploaded_file, available_lipids: list, gui=True):
         try:
@@ -557,7 +631,7 @@ class MembraneBuilder:
             default_entry = [available_lipids[0], 1.0, 1.0, 0.6, 0.6]
             st.session_state.entries_abs = [default_entry]
 
-    def lipid_param(self,lip):
+    def lipid_param(self,lip,ff):
         if self.config.selected_ff == "martini_v2.2":
             if lip =="CHOL" or lip == "CHOL2":
                 self.config.chol_import_needed = "CHOL" if lip == "CHOL" else "CHOL2"
@@ -571,40 +645,40 @@ class MembraneBuilder:
         else:
             return "params:default"    
 
-    def create_membrane_str(self):
+    def create_membrane_str(self,config):
         """Create the COBY input string to generate the membrane."""
         
 
-        entries = self.config.entries_current
-
-        if not self.config.abs_lip_vals:
+        entries = config.entries_current
+        ff = config.selected_ff
+        if not config.abs_lip_vals:
             upper_string = "leaflet:upper " + " ".join([
-                f"lipid:{lip}:{upper}:charge:top:{self.lipid_param(lip)}:apl:{apl}"
+                f"lipid:{lip}:{upper}:charge:top:{self.lipid_param(lip,ff)}:apl:{apl}"
                 for lip, upper, _, apl, _ in entries
                 if float(upper) > 0
             ])
 
             lower_string = "leaflet:lower " + " ".join([
-                f"lipid:{lip}:{lower}:charge:top:{self.lipid_param(lip)}:apl:{apl}"
+                f"lipid:{lip}:{lower}:charge:top:{self.lipid_param(lip,ff)}:apl:{apl}"
                 for lip, _, lower, _, apl in entries
                 if float(lower) > 0
             ])
 
         else:
             upper_string = "leaflet:upper lipid_optim:abs_val " + " ".join([
-                f"lipid:{lip}:{upper}:charge:top:{self.lipid_param(lip)}:apl:{apl}"
+                f"lipid:{lip}:{upper}:charge:top:{self.lipid_param(lip,ff)}:apl:{apl}"
                 for lip, upper, _, apl, _ in entries
                 if float(upper) > 0
             ])
 
             lower_string = "leaflet:lower lipid_optim:abs_val " + " ".join([
-                f"lipid:{lip}:{lower}:charge:top:{self.lipid_param(lip)}:apl:{apl}"
+                f"lipid:{lip}:{lower}:charge:top:{self.lipid_param(lip,ff)}:apl:{apl}"
                 for lip, _, lower, _, apl in entries
                 if float(lower) > 0
             ])
 
         membrane_string = f"grid_maker_grouping_algorithm:no_groups {upper_string} {lower_string}"
-        self.config.membrane_string = membrane_string
+        config.membrane_string = membrane_string
         return membrane_string
     def check_chol_import(self):
         """Check entries_current for cholesterol lipids and set chol_import_needed if found."""
@@ -614,7 +688,3 @@ class MembraneBuilder:
             if lip in ("CHOL", "CHOL2"):
                 return lip
         return None
-
-if __name__ == "__main__":
-    parser = MartiniLipidParser()
-    parser.getsidebarff()

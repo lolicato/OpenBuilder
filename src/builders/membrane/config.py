@@ -4,7 +4,7 @@ import json
 @dataclass
 class Config:
     # --- General ---
-    output_name: str = "OpenMembraneBuilder-"
+    output_name: str = ""
     selected_ff: str = "martini_v3"
     base_folder: str = ""
     selected_module: str = ""
