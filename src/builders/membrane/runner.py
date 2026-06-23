@@ -43,9 +43,11 @@ class MembraneRunner:
         base_folder    = config.base_folder or config.output_name
         systems_folder = os.path.join(base_folder, "systems")
         toppar_folder  = os.path.join(base_folder, self.global_info.toppar_folder)
+        user_inputs_dir  = os.path.join(base_folder, "user_inputs")
         os.makedirs(base_folder,    exist_ok=True)
         os.makedirs(systems_folder, exist_ok=True)
         os.makedirs(toppar_folder,  exist_ok=True)
+        os.makedirs(user_inputs_dir,   exist_ok=True)
 
         # Step 1 — copy shared files
         mdp_target = "protein" if with_protein else "membrane"
@@ -56,24 +58,32 @@ class MembraneRunner:
         molecule_imports = self._build_molecule_imports(config)
         itp_input_ff     = f"include:{self.global_info.toppar_folder_path}/{config.selected_ff}.top"
 
-        # Copy ITP once (shared across systems)
         if with_protein and config.itp_path:
+            original_itp = config.itp_path                                   
+
             itp_dest = os.path.join(toppar_folder, "protein.itp")
             if os.path.abspath(config.itp_path) != os.path.abspath(itp_dest):
                 shutil.copy2(config.itp_path, itp_dest)
             self.topology_editor.overwrite_moleculetype_line(itp_dest)
             config.itp_path = itp_dest
 
+            self.file_manager.copy_userinput(original_itp, user_inputs_dir)
+        if config.template_active and config.template_path and os.path.exists(config.template_path):              # ← new block
+                config.template_path = self.file_manager.copy_userinput(config.template_path, user_inputs_dir)
         # Templates — entries is either a dict {name: entries} or a flat list
         templates = config.entries if isinstance(config.entries, dict) else {
             self.global_info.default_template_name: config.entries
         }
+        if with_protein and config.pdb_path and os.path.exists(config.pdb_path):
+            new_pdb_path = os.path.join(user_inputs_dir, os.path.basename(config.pdb_path))
+            if os.path.abspath(config.pdb_path) != os.path.abspath(new_pdb_path):
+                config.pdb_path = self.file_manager.copy_userinput(config.pdb_path, user_inputs_dir)
 
         all_systems = []
 
         for template_name, entries in templates.items():
-            config.entries_current = entries                                           # ← set first
-            config.membrane_string = self.membrane_parser.create_membrane_str(config) # ← then build
+            config.entries_current = entries                                          
+            config.membrane_string = self.membrane_parser.create_membrane_str(config)
             suffix = f"{template_name}_" if template_name != self.global_info.default_template_name else ""
 
             params = {
@@ -107,6 +117,7 @@ class MembraneRunner:
 
                 coby_output = run_coby_simulation(params, protein_line, folder)
                 self.topology_editor.edit_topology(config.selected_ff, folder)
+                self.topology_editor.replace_placeholder_title(os.path.join(folder, "topol.top"), config)
 
                 if with_protein:
                     self.topology_editor.fix_protein_includes_only(
@@ -131,7 +142,6 @@ class MembraneRunner:
         self._rotate_protein(config, system_index)
         self._position_protein(config, system_index)
         params = config.protein_params[protein_key]
-
         if config.z_method == "Height above Membrane":
             upper_z_mem = self._create_pure_membrane_system(system_path, config, molecule_imports)
             cz = upper_z_mem / 10.0 + config.distance_to_mem - config.box_z / 2
@@ -154,7 +164,6 @@ class MembraneRunner:
         if system_index != 0 and not config.randomize_rot_every:
             return
 
-        # Get the user-specified values from R0001 once
         source = config.protein_params.get("R0001", {})
 
         if config.randomize_rot and not config.randomize_rot_every:
@@ -177,7 +186,7 @@ class MembraneRunner:
         if system_index != 0 and not config.randomize_pos_every:
             return
 
-        # Read user-specified values from R0001 as the source of truth
+
         source = config.protein_params.get("R0001", {})
 
         if config.randomize_pos and not config.randomize_pos_every:
@@ -316,7 +325,41 @@ class TopologyEditor:
         with open(topol_file, 'w') as f:
             f.write(merged)
 
+    def replace_placeholder_title(self, topol_path: str, config) -> None:
+        """
+        Replaces PLACEHOLDER_TITLE in topol.top with a descriptive system title:
+        {protein_filename}_{lipid1}_{upper1}_{lower1}_{lipid2}_{upper2}_{lower2}_...
+        """
+        # Build membrane composition string
+        entries = config.entries_current if hasattr(config, "entries_current") and config.entries_current \
+                else (next(iter(config.entries.values())) if isinstance(config.entries, dict)
+                        else config.entries)
 
+        composition_parts = []
+        for entry in entries:
+            lipid, upper, lower = entry[0], entry[1], entry[2]
+            # Format ratios: drop trailing zeros for cleanliness (1.0 → 1, 0.33 → 0.33)
+            upper_str = str(int(upper)) if float(upper) == int(upper) else str(upper)
+            lower_str = str(int(lower)) if float(lower) == int(lower) else str(lower)
+            composition_parts.append(f"{lipid}_{upper_str}_{lower_str}")
+
+        membrane_composition = "_".join(composition_parts)
+
+        # Build full title
+        if config.pdb_path and os.path.exists(config.pdb_path):
+            protein_name = os.path.splitext(os.path.basename(config.pdb_path))[0]
+            title = f"{protein_name}_{membrane_composition}"
+        else:
+            title = membrane_composition
+
+        # Replace in file
+        with open(topol_path, "r") as f:
+            content = f.read()
+
+        content = content.replace("PLACEHOLDER_TITLE", title)
+
+        with open(topol_path, "w") as f:
+            f.write(content)
     def overwrite_moleculetype_line(self, itp_file: str):
         """
         Overwrites the first line after [ moleculetype ] with 'Protein'.
@@ -348,12 +391,7 @@ class TopologyEditor:
     def fix_protein_includes_only(self, topol_path: str):
         """
         ONLY fix #include paths ENDING in protein.itp (others unchanged).
-        
-        #include "/path/protein.itp"   →  #include "protein.itp"
-        #include "/path/martini.itp"   →  UNCHANGED
-        
-        Args:
-            topol_path: Path to topol.top
+
         """
         with open(topol_path, 'r') as f:
             lines = f.readlines()
@@ -371,7 +409,6 @@ class TopologyEditor:
                 new_line = '#include "../../toppar/protein.itp"\n'
                 updated_lines.append(new_line)
                 modified = True
-                print(f"🔧 {full_path.strip()} → protein.itp")
             else:
                 updated_lines.append(line)  
         
