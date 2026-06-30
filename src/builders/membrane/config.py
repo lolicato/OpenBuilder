@@ -7,7 +7,6 @@ class Config:
     output_name: str = ""
     selected_ff: str = "martini_v3"
     base_folder: str = ""
-    selected_module: str = ""
 
 
     # --- Box ---
@@ -25,8 +24,7 @@ class Config:
 
 
     # --- Resolved file paths (set after writing uploads to disk) ---
-    pdb_path: str = ""
-    itp_path: str = ""
+    protein_files: dict = field(default_factory=dict)
 
     # --- Lipids ---
     template_active: bool = False
@@ -43,12 +41,16 @@ class Config:
     # --- Protein positioning ---
     # z placement strategy
     z_method: str = "Absolute z position"   # or "Height above Membrane"
-    distance_to_mem: float = 2.0     
+    distance_to_mem: float = 2.0
     # randomize flags
-    randomize_pos: bool = False        # randomise x/y for all systems equally
-    randomize_pos_every: bool = False  # re-randomise x/y for each system
-    randomize_rot: bool = False        # randomise rotation for all systems equally
-    randomize_rot_every: bool = False  # re-randomise rotation for each system
+    randomize_pos: bool = False
+    randomize_pos_every: bool = False
+    randomize_rot: bool = False
+    randomize_rot_every: bool = False
+    # multiple copies
+    more_copies: bool = False
+    copy_number: int = 2
+    randomize_rot_all_copies: bool = False
     protein_params: dict = field(default_factory=dict, repr=False, compare=False)
     
 

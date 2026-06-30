@@ -29,8 +29,8 @@ def _set_step(step: MembraneStep):
     elif step == MembraneStep.PROTEIN_INSERTION:
         st.session_state.pop("_protein_seeded", None)
 
-# ─── Entry point ──────────────────────────────────────────────────────────────
-def main(global_info: GlobalInfo, has_protein: bool, temp_folder: str) -> tuple[str | None, Config | None]:
+
+def main(global_info: GlobalInfo, has_protein: bool, temp_folder: str, protein_only:bool = False) -> tuple[str | None, Config | None]:
 
     if "ff_data" not in st.session_state:
         parser       = MembraneParser()
@@ -46,19 +46,25 @@ def main(global_info: GlobalInfo, has_protein: bool, temp_folder: str) -> tuple[
 
     if "config" not in st.session_state:
         st.session_state["config"] = Config(base_folder=global_info.base_folder)
+    st.session_state["has_protein"]  = has_protein
+    st.session_state["protein_only"] = protein_only
 
     ff_data      = st.session_state["ff_data"]
     force_fields = st.session_state["force_fields"]
     config       = st.session_state["config"]
+    for rep_key, rep_val in config.protein_params.items():
+        if rep_val and not isinstance(next(iter(rep_val.values())), dict):
+
+            config.protein_params[rep_key] = {}
     step         = _get_step()
 
     if step == MembraneStep.MEMBRANE:
-        result = _render_membrane(global_info, ff_data, force_fields, has_protein, config, temp_folder)
+        result = _render_membrane(global_info, ff_data, force_fields, has_protein, config, temp_folder, protein_only=protein_only)
         if result == "back":
             return "back", None
 
     elif step == MembraneStep.PROTEIN_INSERTION:
-        _render_protein_insertion(global_info, config, temp_folder)
+        _render_protein_insertion(global_info, config, temp_folder, protein_only=protein_only)
 
     elif step == MembraneStep.PREVIEW:
         action = st.session_state.pop("_preview_action", None)
@@ -73,7 +79,7 @@ def main(global_info: GlobalInfo, has_protein: bool, temp_folder: str) -> tuple[
             _set_step(MembraneStep.RESULTS)
             st.rerun()
 
-        render_preview(config, has_protein)
+        render_preview(config, has_protein, protein_only=protein_only)
 
 
     elif step == MembraneStep.RESULTS:
@@ -84,6 +90,7 @@ def main(global_info: GlobalInfo, has_protein: bool, temp_folder: str) -> tuple[
                 if config.output_name else f"OpenMembraneBuilder-{timestamp}"
             )
             config.base_folder = os.path.join(global_info.base_folder, folder_name)
+            config.output_name  = config.base_folder
 
             with st.spinner("Building membrane system..."):
                 output_pdbs, zip_path = MembraneRunner().run(config)
@@ -97,10 +104,11 @@ def main(global_info: GlobalInfo, has_protein: bool, temp_folder: str) -> tuple[
 
     return None, None
 
-# ─── Internal renderers ───────────────────────────────────────────────────────
 
-def _render_membrane(global_info, ff_data, force_fields, has_protein, config, temp_folder) -> str | None:
+
+def _render_membrane(global_info, ff_data, force_fields, has_protein, config, temp_folder, protein_only: bool = False) -> str | None:
     action = st.session_state.pop("_membrane_action", None)
+
 
     if action in ("next", "back"):
         config.output_name     = st.session_state.get("output_name", "")
@@ -110,10 +118,6 @@ def _render_membrane(global_info, ff_data, force_fields, has_protein, config, te
         config.box_z           = st.session_state.get("box_z", 10.0)
         config.box_type        = st.session_state.get("box_type", "rectangular")
         config.n_systems       = st.session_state.get("n_systems", 1)
-        config.abs_lip_vals    = st.session_state.get("abs_lip_vals", False)
-        config.template_active = st.session_state.get("template_active", False)
-        config.template_path   = st.session_state.get("template_path", "")
-        config.entries         = st.session_state.get("template_entries", {}) if config.template_active else st.session_state.get("entries", [])
         pos_ion = st.session_state.get("pos_ion", "NA")
         neg_ion = st.session_state.get("neg_ion", "CL")
         salt    = st.session_state.get("salt_molarity", 0.15)
@@ -124,42 +128,66 @@ def _render_membrane(global_info, ff_data, force_fields, has_protein, config, te
         else:
             config.solvation = f"solv:W pos:{pos_ion} neg:{neg_ion} salt_molarity:{salt}"
 
+
+        if protein_only:
+            config.entries         = []
+            config.abs_lip_vals    = False
+            config.template_active = False
+            config.template_path   = ""
+        else:
+            config.abs_lip_vals    = st.session_state.get("abs_lip_vals", False)
+            config.template_active = st.session_state.get("template_active", False)
+            config.template_path   = st.session_state.get("template_path", "")
+            config.entries         = st.session_state.get("template_entries", {}) if config.template_active else st.session_state.get("entries", [])
+
         if action == "back":
             return "back"
 
         if action == "next":
-            is_valid, errors = _validate({"entries": config.entries, "abs_lip_vals": config.abs_lip_vals})
-            if not is_valid:
-                for e in errors:
-                    st.error(e)
-            else:
-                _set_step(MembraneStep.PROTEIN_INSERTION if has_protein else MembraneStep.PREVIEW)
-                st.rerun()
+            if not protein_only:
+                is_valid, errors = _validate({"entries": config.entries, "abs_lip_vals": config.abs_lip_vals})
+                if not is_valid:
+                    for e in errors:
+                        st.error(e)
+                    return None
+            _set_step(MembraneStep.PROTEIN_INSERTION if has_protein else MembraneStep.PREVIEW)
+            st.rerun()
 
-    render_membrane(force_fields, ff_data, global_info, config, temp_folder)
+    render_membrane(force_fields, ff_data, global_info, config, temp_folder, protein_only=protein_only)
     return None
 
-
-def _render_protein_insertion(global_info, config, temp_folder) -> None:
+def _render_protein_insertion(global_info, config, temp_folder, protein_only: bool = False) -> None:
     action = st.session_state.pop("_protein_action", None)
 
     if action in ("next", "back"):
-        config.pdb_path            = st.session_state.get("pdb_path", "")
-        config.itp_path            = st.session_state.get("itp_path", "")
-        config.z_method            = st.session_state.get("z_method", "Absolute z position")
-        config.distance_to_mem     = st.session_state.get("distance_to_mem", 2.0)
-        config.randomize_pos       = st.session_state.get("randomize_pos", False)
-        config.randomize_pos_every = st.session_state.get("randomize_pos_every", False)
-        config.randomize_rot       = st.session_state.get("randomize_rot", False)
-        config.randomize_rot_every = st.session_state.get("randomize_rot_every", False)
-        config.protein_params["R0001"] = {
-            "cx": st.session_state.get("cx", 0.0),
-            "cy": st.session_state.get("cy", 0.0),
-            "cz": st.session_state.get("cz", 0.0),
-            "rx": st.session_state.get("rx", 0.0),
-            "ry": st.session_state.get("ry", 0.0),
-            "rz": st.session_state.get("rz", 0.0),
-        }
+        config.protein_files            = st.session_state.get("protein_files", {})
+        config.insertion_params         = st.session_state.get("insertion_params", {})  
+        config.use_protein_distance     = st.session_state.get("use_protein_distance", False)
+        config.protein_distance         = st.session_state.get("protein_distance", 1.0)
+
+        # Read per-protein params from insertion_params instead of flat session state
+        config.protein_params["R0001"] = {}
+        for pdb_name in config.protein_files:
+            ns = pdb_name.replace(".", "_").replace(" ", "_")
+            ip = config.insertion_params.get(pdb_name, {})
+            config.protein_params["R0001"][pdb_name] = {
+                "cx": st.session_state.get(f"{ns}_cx", 0.0),
+                "cy": st.session_state.get(f"{ns}_cy", 0.0),
+                "cz": st.session_state.get(f"{ns}_cz", 0.0),
+                "rx": st.session_state.get(f"{ns}_rx", 0.0),
+                "ry": st.session_state.get(f"{ns}_ry", 0.0),
+                "rz": st.session_state.get(f"{ns}_rz", 0.0),
+            }
+            # Store per-protein flags onto config for runner and preview
+            config.z_method                 = ip.get("z_method", "Absolute z position")
+            config.distance_to_mem          = ip.get("distance_to_mem", 2.0)
+            config.randomize_pos            = ip.get("randomize_pos", False)
+            config.randomize_pos_every      = ip.get("randomize_pos_every", False)
+            config.randomize_rot            = ip.get("randomize_rot", False)
+            config.randomize_rot_every      = ip.get("randomize_rot_every", False)
+            config.more_copies              = ip.get("more_copies", False)
+            config.copy_number              = ip.get("copy_number", 1)
+            config.randomize_rot_all_copies = ip.get("randomize_rot_all_copies", False)
 
         if action == "back":
             _set_step(MembraneStep.MEMBRANE)
@@ -172,12 +200,10 @@ def _render_protein_insertion(global_info, config, temp_folder) -> None:
         global_info,
         config.box_x, config.box_y, config.box_z, config.n_systems,
         config,
-        temp_folder=temp_folder,
+        temp_folder=temp_folder, protein_only=protein_only
     )
 
 
-
-# ─── Validation ───────────────────────────────────────────────────────────────
 
 def _validate(membrane_params) -> tuple[bool, list[str]]:
     errors   = []

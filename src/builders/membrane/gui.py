@@ -1,9 +1,10 @@
 import streamlit as st
 import pandas as pd
 import os
+from pathlib import Path
 
 
-# ─── GlobalGui ────────────────────────────────────────────────────────────────
+
 
 class GlobalGui:
 
@@ -39,7 +40,7 @@ class GlobalGui:
         st.stop()
 
 
-# ─── MembraneGui ──────────────────────────────────────────────────────────────
+
 
 class MembraneGui:
 
@@ -125,7 +126,7 @@ class MembraneGui:
                     st.session_state["template_path"]    = ""
                     st.session_state["template_active"]  = False
                     st.session_state["template_entries"] = None
-                    # Restore backup, fall back to default if no backup exists
+                    
                     st.session_state["entries"] = st.session_state.pop(
                         "entries_backup", [["POPC", 1.0, 1.0, 0.6, 0.6]]
                     )
@@ -138,7 +139,7 @@ class MembraneGui:
                     with open(template_path, "wb") as f:
                         f.write(uploaded_template.getvalue())
 
-                    # Back up current manual entries before overwriting
+                   
                     st.session_state["entries_backup"] = st.session_state.get("entries", [["POPC", 1.0, 1.0, 0.6, 0.6]])
 
                     parser = MembraneParser()
@@ -164,24 +165,69 @@ class MembraneGui:
             st.rerun()
         if not st.session_state.show_lipid_mapping or not lipid_map:
             return
-        df     = pd.DataFrame.from_dict(lipid_map, orient="index").reset_index(drop=True)
-        search = st.text_input("Search across all fields",
-                               placeholder="e.g. phosphatidylcholine, C18...",
-                               key="lipid_map_search")
-        if search:
-            mask = df.apply(lambda col: col.str.contains(search, case=False, na=False)).any(axis=1)
-            df   = df[mask]
+
+        df = pd.DataFrame.from_dict(lipid_map, orient="index").reset_index(drop=True)
+
         st.subheader("Lipid Mapping")
-        st.dataframe(df, use_container_width=True, hide_index=True)
-        st.download_button("Download as CSV", data=df.to_csv(index=False).encode("utf-8"),
-                           file_name="lipid_mapping.csv", mime="text/csv",
-                           key="lipid_map_download")
+
+
+        
+        filter_cols = [c for c in df.columns if c != "resname"]
+        cols = st.columns(len(filter_cols) + 1)  
+        active_filters = {}
+
+        cols[0].text_input("Resname", placeholder="e.g. POPC", key="lipid_map_resname_search")
+
+        for i, col in enumerate(filter_cols):
+            options = ["All"] + sorted(df[col].dropna().astype(str).unique().tolist())
+            active_filters[col] = cols[i + 1].selectbox(
+                col.capitalize(), options, key=f"lipid_filter_{col}"
+            )
+
+        
+        filtered = df.copy()
+
+        resname_search = st.session_state.get("lipid_map_resname_search", "")
+        if resname_search:
+            filtered = filtered[
+                filtered["resname"].astype(str).str.contains(resname_search, case=False, na=False)
+            ]
+
+        for col, val in active_filters.items():
+            if val != "All":
+                filtered = filtered[filtered[col].astype(str) == val]
+
+        st.caption(f"Showing {len(filtered)} of {len(df)} lipids")
+
+        st.dataframe(
+            filtered,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "resname":     st.column_config.TextColumn("Resname"),
+                "moltype":     st.column_config.TextColumn("Type"),
+                "head":        st.column_config.TextColumn("Headgroup"),
+                "linker":      st.column_config.TextColumn("Linker"),
+                "tail1":       st.column_config.TextColumn("Tail 1"),
+                "tail2":       st.column_config.TextColumn("Tail 2"),
+                "tail1_beads": st.column_config.TextColumn("Tail 1 Beads"),
+                "tail2_beads": st.column_config.TextColumn("Tail 2 Beads"),
+            },
+        )
+
+        st.download_button(
+            "Download as CSV",
+            data=filtered.to_csv(index=False).encode("utf-8"),
+            file_name="lipid_mapping.csv",
+            mime="text/csv",
+            key="lipid_map_download"
+        )
 
     @staticmethod
     def render_membrane_entries(available_lipids: list) -> list:
         abs_lip_vals = st.checkbox("Give absolute lipid values", key="abs_lip_vals")
 
-        # If a template is active, skip the manual editor
+
         if st.session_state.get("template_active"):
             st.info("Lipid entries are loaded from the template.")
             entries_dict = st.session_state.get("template_entries", {})
@@ -239,114 +285,241 @@ class MembraneGui:
 class ProteinGui:
 
     @staticmethod
-    def render_protein_file_uploads(temp_folder: str,) -> tuple[str, str]:
+    def render_protein_file_uploads(temp_folder: str) -> dict[str, dict]:
         os.makedirs(temp_folder, exist_ok=True)
-        pdb_path = st.session_state.get("pdb_path", "")
-        itp_path = st.session_state.get("itp_path", "")
 
-        # Show currently loaded file if already uploaded
-        if pdb_path and os.path.exists(pdb_path):
-            st.sidebar.success(f"✅ PDB loaded: {os.path.basename(pdb_path)}")
-            if st.sidebar.button("Remove PDB", key="remove_pdb"):
-                if os.path.exists(pdb_path):
-                    os.remove(pdb_path)
-                pdb_path = ""
-                st.session_state["pdb_path"] = ""
+        if "protein_files" not in st.session_state:
+            st.session_state["protein_files"] = {}
+        if "protein_uploader_slots" not in st.session_state:
+            st.session_state["protein_uploader_slots"] = 1
+
+        protein_files = st.session_state["protein_files"]
+
+        st.sidebar.subheader("Protein Files")
+
+        # Show confirmed proteins as static labels with remove button
+        for pdb_name, paths in list(protein_files.items()):
+            col1, col2 = st.sidebar.columns([3, 1])
+            col1.markdown(f"**✅ {pdb_name}** loaded")
+            col1.caption(f"ITP: {os.path.basename(paths['itp_path'])}")
+            ns = pdb_name.replace(".", "_").replace(" ", "_")
+            if col2.button("🗑", key=f"remove_protein_{ns}"):
+                # Remove files from disk
+                for path_key in ("pdb_path", "itp_path"):
+                    p = paths.get(path_key, "")
+                    if os.path.exists(p):
+                        os.remove(p)
+                # Clear all session state keys for this protein
+                del protein_files[pdb_name]
+                for suffix in ["cx","cy","cz","rx","ry","rz",
+                            "randomize_rot","randomize_rot_every","randomize_rot_all_copies",
+                            "randomize_pos","randomize_pos_every",
+                            "z_method","distance_to_mem","more_copies","copy_number"]:
+                    st.session_state.pop(f"{ns}_{suffix}", None)
+                st.session_state["protein_files"] = protein_files
+                st.session_state["protein_uploader_slots"] = 1  
                 st.rerun()
-        else:
-            pdb_file = st.sidebar.file_uploader("PDB", type=["pdb"],
-                        help="Upload a PDB file containing the coarse-grained protein structure")
-            if pdb_file:
-                pdb_path = os.path.join(temp_folder, pdb_file.name)
-                with open(pdb_path, "wb") as f:
-                    f.write(pdb_file.getvalue())
-                st.session_state["pdb_path"] = pdb_path
 
-        # Same for ITP
-        if itp_path and os.path.exists(itp_path):
-            st.sidebar.success(f"✅ ITP loaded: {os.path.basename(itp_path)}")
-            if st.sidebar.button("Remove ITP", key="remove_itp"):
-                if os.path.exists(itp_path):
-                    os.remove(itp_path)
-                itp_path = ""
-                st.session_state["itp_path"] = ""
+        # Show one new uploader slot if active and fewer than 2 proteins loaded
+        if st.session_state["protein_uploader_slots"] == 1 and len(protein_files) < 2:
+            slot = len(protein_files)
+            st.sidebar.markdown(f"**Protein {slot + 1}**")
+            pdb_file = st.sidebar.file_uploader("PDB file", type=["pdb"], key=f"pdb_uploader_{slot}")
+            itp_file = st.sidebar.file_uploader("ITP file", type=["itp"], key=f"itp_uploader_{slot}")
+
+            if pdb_file and itp_file:
+                pdb_name = pdb_file.name
+                if pdb_name not in protein_files:
+                    pdb_path = os.path.join(temp_folder, pdb_file.name)
+                    itp_path = os.path.join(temp_folder, itp_file.name)
+                    with open(pdb_path, "wb") as f:
+                        f.write(pdb_file.getvalue())
+                    with open(itp_path, "wb") as f:
+                        f.write(itp_file.getvalue())
+                    protein_files[pdb_name] = {"pdb_path": pdb_path, "itp_path": itp_path}
+                    st.session_state["protein_files"] = protein_files
+                    st.session_state["protein_uploader_slots"] = 0
+                    st.rerun()
+            elif pdb_file and not itp_file:
+                st.sidebar.warning("Please also upload the matching ITP file.")
+            elif itp_file and not pdb_file:
+                st.sidebar.warning("Please also upload the matching PDB file.")
+
+            # "Remove last protein" — cancels the open uploader slot before any file is loaded
+            if len(protein_files) == 1:
+                if st.sidebar.button("✖ Cancel second protein", key="cancel_second_protein"):
+                    st.session_state["protein_uploader_slots"] = 0
+                    st.rerun()
+
+        # Show "Add another" only when 1 protein is loaded and uploader is hidden
+        if len(protein_files) == 1 and st.session_state["protein_uploader_slots"] == 0:
+            if st.sidebar.button("Add another protein", key="add_protein_slot"):
+                st.session_state["protein_uploader_slots"] = 1
                 st.rerun()
-        else:
-            itp_file = st.sidebar.file_uploader("ITP", type=["itp"])
-            if itp_file:
-                itp_path = os.path.join(temp_folder, itp_file.name)
-                with open(itp_path, "wb") as f:
-                    f.write(itp_file.getvalue())
-                st.session_state["itp_path"] = itp_path
 
-        return pdb_path, itp_path
+        return protein_files
 
     @staticmethod
-    def render_insertion_params(boxx: float, boxy: float, boxz: float, n_systems: int) -> dict:
-        st.sidebar.markdown("---")
+    def render_insertion_params_for_protein(
+        protein_name: str,
+        boxx: float, boxy: float, boxz: float,
+        n_systems: int,
+        protein_only: bool,
+        use_distance_mode: bool = False,
+        n_proteins: int = 1,
+    ) -> dict:
+        ns = protein_name.replace(".", "_").replace(" ", "_")  # sanitize key namespace
+
+        more_copies = False
+        copy_number = 2
+        if n_proteins == 1:
+            st.sidebar.markdown("---")
+            more_copies = st.sidebar.checkbox(
+                "Have more than 1 copy of the protein inside the system",
+                key=f"{ns}_more_copies"
+            )
+            if more_copies:
+                st.sidebar.subheader("Multiple protein setup")
+                copy_number = st.sidebar.number_input(
+                    "Number of copies per system",
+                    value=st.session_state.get(f"{ns}_copy_number", 2),
+                    min_value=2, step=1, key=f"{ns}_copy_number",
+                )
+
         st.sidebar.subheader("Protein Placement")
-
-        randomize_pos = st.sidebar.checkbox("Randomize xy position", key="randomize_pos")
-        randomize_pos_every = False
-        if randomize_pos and n_systems > 1:
-            randomize_pos_every = st.sidebar.checkbox("Re-randomize position for each system",
-                                                       key="randomize_pos_every")
         cx, cy = 0.0, 0.0
-        if not randomize_pos:
-            cx = st.sidebar.number_input("Position X (nm)", -boxx / 2, boxx / 2,
-                                          value=st.session_state.get("cx", 0.0),
-                                          step=0.1, key="cx")
-            cy = st.sidebar.number_input("Position Y (nm)", -boxy / 2, boxy / 2,
-                                          value=st.session_state.get("cy", 0.0),
-                                          step=0.1, key="cy")
+        randomize_pos = False
+        randomize_pos_every = False
 
-        z_method = st.sidebar.selectbox("Z placement method",
-                                         ["Absolute z position", "Height above Membrane"],
-                                         key="z_method")
-        cz, distance_to_mem = 0.0, 2.0
-        if z_method == "Absolute z position":
-            cz = st.sidebar.number_input("Absolute Z (nm)", -boxz / 2, boxz / 2,
-                                          value=st.session_state.get("cz", 0.0),
-                                          step=0.1, key="cz")
+        if not more_copies and not use_distance_mode:
+            randomize_pos = st.sidebar.checkbox("Randomize xy position", key=f"{ns}_randomize_pos")
+            if randomize_pos and n_systems > 1:
+                randomize_pos_every = st.sidebar.checkbox(
+                    "Re-randomize position for each system", key=f"{ns}_randomize_pos_every"
+                )
+            if not randomize_pos:
+                cx = st.sidebar.number_input(
+                    "Position X (nm)", -boxx / 2, boxx / 2,
+                    value=st.session_state.get(f"{ns}_cx", 0.0),
+                    step=0.1, key=f"{ns}_cx",
+                )
+                cy = st.sidebar.number_input(
+                    "Position Y (nm)", -boxy / 2, boxy / 2,
+                    value=st.session_state.get(f"{ns}_cy", 0.0),
+                    step=0.1, key=f"{ns}_cy",
+                )
+        elif use_distance_mode:
+            st.sidebar.info("X/Y position set automatically via protein distance.")
+
+        # Z placement
+        if not protein_only:
+            z_method = st.sidebar.selectbox(
+                "Z placement method",
+                ["Absolute z position", "Height above Membrane"],
+                key=f"{ns}_z_method",
+            )
+            cz, distance_to_mem = 0.0, 2.0
         else:
-            distance_to_mem = st.sidebar.number_input("Distance above membrane (nm)",
-                                                        0.0, boxz / 2,
-                                                        value=st.session_state.get("distance_to_mem", 2.0),
-                                                        step=0.1, key="distance_to_mem")
+            z_method = "Absolute z position"
+            distance_to_mem = ""
 
+        if z_method == "Absolute z position":
+            cz = st.sidebar.number_input(
+                "Absolute Z (nm)", -boxz / 2, boxz / 2,
+                value=st.session_state.get(f"{ns}_cz", 0.0),
+                step=0.1, key=f"{ns}_cz",
+            )
+        else:
+            distance_to_mem = st.sidebar.number_input(
+                "Distance above membrane (nm)", 0.0, boxz / 2,
+                value=st.session_state.get(f"{ns}_distance_to_mem", 2.0),
+                step=0.1, key=f"{ns}_distance_to_mem",
+            )
+
+        # Rotation
         st.sidebar.subheader("Protein Rotation")
-        randomize_rot = st.sidebar.checkbox("Randomize rotation", key="randomize_rot")
-        randomize_rot_every = False
-        if randomize_rot and n_systems > 1:
-            randomize_rot_every = st.sidebar.checkbox("Re-randomize rotation for each system",
-                                                       key="randomize_rot_every")
         rx, ry, rz = 0.0, 0.0, 0.0
+        randomize_rot = st.sidebar.checkbox("Randomize rotation", key=f"{ns}_randomize_rot")
+        randomize_rot_every = False
+        randomize_rot_all_copies = False
+
+        if randomize_rot and n_systems > 1:
+            randomize_rot_every = st.sidebar.checkbox(
+                "Re-randomize rotation for each system", key=f"{ns}_randomize_rot_every"
+            )
+        if more_copies:
+            randomize_rot_all_copies = st.sidebar.checkbox(
+                "Randomize the rotation for all copies", key=f"{ns}_randomize_rot_all_copies"
+            )
         if not randomize_rot:
-            rx = st.sidebar.number_input("Rotation X (°)", -180.0, 180.0,
-                                          value=st.session_state.get("rx", 0.0),
-                                          step=1.0, key="rx")
-            ry = st.sidebar.number_input("Rotation Y (°)", -180.0, 180.0,
-                                          value=st.session_state.get("ry", 0.0),
-                                          step=1.0, key="ry")
-            rz = st.sidebar.number_input("Rotation Z (°)", -180.0, 180.0,
-                                          value=st.session_state.get("rz", 0.0),
-                                          step=1.0, key="rz")
+            rx = st.sidebar.number_input(
+                "Rotation X (°)", -180.0, 180.0,
+                value=st.session_state.get(f"{ns}_rx", 0.0),
+                step=1.0, key=f"{ns}_rx",
+            )
+            ry = st.sidebar.number_input(
+                "Rotation Y (°)", -180.0, 180.0,
+                value=st.session_state.get(f"{ns}_ry", 0.0),
+                step=1.0, key=f"{ns}_ry",
+            )
+            rz = st.sidebar.number_input(
+                "Rotation Z (°)", -180.0, 180.0,
+                value=st.session_state.get(f"{ns}_rz", 0.0),
+                step=1.0, key=f"{ns}_rz",
+            )
 
         return {
-            "randomize_pos":       randomize_pos,
-            "randomize_pos_every": randomize_pos_every,
+            "more_copies": more_copies, "copy_number": copy_number,
+            "randomize_pos": randomize_pos, "randomize_pos_every": randomize_pos_every,
             "cx": cx, "cy": cy,
-            "z_method":            z_method,
-            "cz":                  cz,
-            "distance_to_mem":     distance_to_mem,
-            "randomize_rot":       randomize_rot,
-            "randomize_rot_every": randomize_rot_every,
+            "z_method": z_method, "cz": cz, "distance_to_mem": distance_to_mem,
+            "randomize_rot": randomize_rot, "randomize_rot_every": randomize_rot_every,
+            "randomize_rot_all_copies": randomize_rot_all_copies,
             "rx": rx, "ry": ry, "rz": rz,
         }
+    @staticmethod
+    def render_multi_protein_params(
+        protein_files: dict,           
+        boxx, boxy, boxz, n_systems, protein_only
+    ) -> dict:
+        """Renders insertion params for all loaded proteins."""
+        if not protein_files:
+            return {}  
+        results = {}
+        use_distance = False
+
+        if len(protein_files) == 2:
+            st.sidebar.markdown("---")
+            use_distance = st.sidebar.checkbox(
+                "Set distance between proteins instead of X/Y positions",
+                key="use_protein_distance"
+            )
+            if use_distance:
+                st.sidebar.number_input(
+                    "Distance between proteins (nm)", 0.0, min(boxx, boxy),
+                    value=st.session_state.get("protein_distance", 1.0),
+                    step=0.1, key="protein_distance"
+                )
+
+        for pdb_name in protein_files:
+            st.sidebar.markdown("---")
+            st.sidebar.markdown("---")
+            st.sidebar.markdown(f"## {Path(pdb_name).stem} -- Params")
+            results[pdb_name] = ProteinGui.render_insertion_params_for_protein(
+                protein_name=pdb_name,
+                boxx=boxx, boxy=boxy, boxz=boxz,
+                n_systems=n_systems,
+                protein_only=protein_only,
+                use_distance_mode=(use_distance and len(protein_files) == 2),
+                n_proteins=len(protein_files),   
+            )
+        st.session_state["insertion_params"] = results
+        return results    
 
 
-# ─── Page render functions ────────────────────────────────────────────────────
-def render_membrane(force_fields, ff_data, global_info, config, temp_folder) -> dict | str | None:
+
+
+def render_membrane(force_fields, ff_data, global_info, config, temp_folder, protein_only: bool = False) -> dict | str | None:
     if not st.session_state.get("_membrane_seeded"):
         st.session_state["selected_ff"]  = config.selected_ff
         st.session_state["box_type"]     = config.box_type
@@ -370,67 +543,71 @@ def render_membrane(force_fields, ff_data, global_info, config, temp_folder) -> 
     nav    = {"action": None}
 
     def sidebar():
-        result["selected_ff"]                          = MembraneGui.render_force_field_selector(force_fields)
-        result["selected_box_type"], result["box_x"],   \
-        result["box_y"],              result["box_z"]    = MembraneGui.render_box_params()
-        result["solvation"]                            = MembraneGui.render_solvation_input(result["selected_ff"])
-        result["n_systems"]                            = MembraneGui.render_n_systems_input()
-        result["output_name"]                          = MembraneGui.render_output_name_input()
+        result["selected_ff"]  = MembraneGui.render_force_field_selector(force_fields)
+        result["selected_box_type"], result["box_x"], result["box_y"], result["box_z"] \
+                               = MembraneGui.render_box_params()
+        result["solvation"]    = MembraneGui.render_solvation_input(result["selected_ff"])
+        result["n_systems"]    = MembraneGui.render_n_systems_input()
+        result["output_name"]  = MembraneGui.render_output_name_input()
 
     def content():
-        selected_ff      = result.get("selected_ff", force_fields[0])
-        available_lipids = ff_data[selected_ff]["available_lipids"]
-        lipid_map        = ff_data[selected_ff]["lipid_map"]
+            selected_ff      = result.get("selected_ff", force_fields[0])
+            available_lipids = ff_data[selected_ff]["available_lipids"]
+            lipid_map        = ff_data[selected_ff]["lipid_map"]
 
-        result["template_active"] = MembraneGui.render_template_uploader(available_lipids, global_info, temp_folder)
-        result["template_path"]   = st.session_state.get("template_path", "")
-        MembraneGui.render_lipid_mapping(lipid_map)
-        result["entries"]         = MembraneGui.render_membrane_entries(available_lipids)
-        result["abs_lip_vals"]    = st.session_state.get("abs_lip_vals", False)
-
-        with st.container(key="nav_membrane"):
-            st.divider()
-            left, _, right = st.columns([1, 6, 1])
-            if left.button("← Back", use_container_width=True):
-                st.session_state["_membrane_action"] = "back"
-                st.rerun()
-            if right.button("Next →", use_container_width=True, type="primary"):
-                st.session_state["_membrane_action"] = "next"
-                st.rerun()
-
-    GlobalGui.render_page(
-        title="Membrane Builder",
-        content_fn=content,
-        sidebar_fn=sidebar,
-        layout="wide",
-    )
+            if not protein_only:                             # <-- guard
+                result["template_active"] = MembraneGui.render_template_uploader(
+                    available_lipids, global_info, temp_folder
+                )
+                result["template_path"] = st.session_state.get("template_path", "")
+                MembraneGui.render_lipid_mapping(lipid_map)
+                result["entries"]     = MembraneGui.render_membrane_entries(available_lipids)
+                result["abs_lip_vals"] = st.session_state.get("abs_lip_vals", False)
 
 
+            # nav buttons unchanged
+            with st.container(key="nav_membrane"):
+                st.divider()
+                left, _, right = st.columns([1, 6, 1])
+                if left.button("← Back", use_container_width=True):
+                    st.session_state["_membrane_action"] = "back"
+                    st.rerun()
+                if right.button("Next →", use_container_width=True, type="primary"):
+                    st.session_state["_membrane_action"] = "next"
+                    st.rerun()
 
-def render_protein_insertion(global_info, boxx, boxy, boxz, n_systems, config, temp_folder) -> dict | str | None:
+    GlobalGui.render_page(title="Membrane Builder", content_fn=content,sidebar_fn=sidebar, layout="wide")
+
+
+def render_protein_insertion(global_info, boxx, boxy, boxz, n_systems, config, temp_folder, protein_only: bool = False) -> dict | str | None:
     if not st.session_state.get("_protein_seeded"):
-        st.session_state["z_method"]            = config.z_method
-        st.session_state["distance_to_mem"]     = config.distance_to_mem
-        st.session_state["randomize_pos"]       = config.randomize_pos
-        st.session_state["randomize_pos_every"] = config.randomize_pos_every
-        st.session_state["randomize_rot"]       = config.randomize_rot
-        st.session_state["randomize_rot_every"] = config.randomize_rot_every
 
-        first = config.protein_params.get("R0001", {})
+        # Per-protein pose and widget seeds
+        for pdb_name, pose in config.protein_params.get("R0001", {}).items():
+            ns = pdb_name.replace(".", "_").replace(" ", "_")
+            st.session_state[f"{ns}_cx"] = pose.get("cx", 0.0)
+            st.session_state[f"{ns}_cy"] = pose.get("cy", 0.0)
+            st.session_state[f"{ns}_cz"] = pose.get("cz", 0.0)
+            st.session_state[f"{ns}_rx"] = pose.get("rx", 0.0)
+            st.session_state[f"{ns}_ry"] = pose.get("ry", 0.0)
+            st.session_state[f"{ns}_rz"] = pose.get("rz", 0.0)
 
-        if not config.randomize_pos:
-            st.session_state["cx"] = first.get("cx", 0.0)
-            st.session_state["cy"] = first.get("cy", 0.0)
+        saved_ip = getattr(config, "insertion_params", {})
+        for pdb_name, ip in saved_ip.items():
+            ns = pdb_name.replace(".", "_").replace(" ", "_")
+            st.session_state[f"{ns}_randomize_rot"]         = ip.get("randomize_rot", False)
+            st.session_state[f"{ns}_randomize_rot_every"]   = ip.get("randomize_rot_every", False)
+            st.session_state[f"{ns}_randomize_rot_all_copies"] = ip.get("randomize_rot_all_copies", False)
+            st.session_state[f"{ns}_randomize_pos"]         = ip.get("randomize_pos", False)
+            st.session_state[f"{ns}_randomize_pos_every"]   = ip.get("randomize_pos_every", False)
+            st.session_state[f"{ns}_z_method"]              = ip.get("z_method", "Absolute z position")
+            st.session_state[f"{ns}_distance_to_mem"]       = ip.get("distance_to_mem", 2.0)
+            st.session_state[f"{ns}_more_copies"]           = ip.get("more_copies", False)
+            st.session_state[f"{ns}_copy_number"]           = ip.get("copy_number", 2)
 
-        if config.z_method == "Absolute z position":
-            st.session_state["cz"] = first.get("cz", 0.0)
-        else:
-            st.session_state["distance_to_mem"] = config.distance_to_mem
-
-        if not config.randomize_rot:
-            st.session_state["rx"] = first.get("rx", 0.0)
-            st.session_state["ry"] = first.get("ry", 0.0)
-            st.session_state["rz"] = first.get("rz", 0.0)
+        # Distance mode seeds
+        st.session_state["use_protein_distance"] = getattr(config, "use_protein_distance", False)
+        st.session_state["protein_distance"]     = getattr(config, "protein_distance", 1.0)
 
         st.session_state["_protein_seeded"] = True
 
@@ -438,9 +615,14 @@ def render_protein_insertion(global_info, boxx, boxy, boxz, n_systems, config, t
     nav    = {"action": None}
 
     def sidebar():
-        result["pdb_path"], \
-        result["itp_path"] = ProteinGui.render_protein_file_uploads(temp_folder)
-        result["insertion_params"] = ProteinGui.render_insertion_params(boxx, boxy, boxz, n_systems)
+        result["protein_files"] = ProteinGui.render_protein_file_uploads(temp_folder)
+        # Use session_state as authoritative source — return value may be stale after rerun
+        protein_files = st.session_state.get("protein_files", result["protein_files"])
+        result["insertion_params"] = ProteinGui.render_multi_protein_params(
+            protein_files,
+            boxx, boxy, boxz, n_systems,
+            protein_only=protein_only,
+        )
 
     def content():
         with st.container(key="nav_protein"):
@@ -450,19 +632,12 @@ def render_protein_insertion(global_info, boxx, boxy, boxz, n_systems, config, t
                 st.session_state["_protein_action"] = "back"
                 st.rerun()
             if right.button("Next →", use_container_width=True, type="primary"):
-                pdb_ready = bool(st.session_state.get("pdb_path") and
-                                 os.path.exists(st.session_state.get("pdb_path", "")))
-                itp_ready = bool(st.session_state.get("itp_path") and
-                                 os.path.exists(st.session_state.get("itp_path", "")))
-                missing = []
-                if not pdb_ready: missing.append("PDB")
-                if not itp_ready: missing.append("ITP")
-                if missing:
-                    st.error(f"Please upload the following files before continuing: {', '.join(missing)}")
+                protein_files = st.session_state.get("protein_files", {})
+                if not protein_files:
+                    st.error("Please upload at least one PDB + ITP pair before continuing.")
                 else:
                     st.session_state["_protein_action"] = "next"
                     st.rerun()
-
 
     GlobalGui.render_page(
         title="Protein Insertion",
@@ -474,7 +649,7 @@ def render_protein_insertion(global_info, boxx, boxy, boxz, n_systems, config, t
 
 
 
-def render_preview(config, has_protein: bool) -> None:
+def render_preview(config, has_protein: bool,protein_only: bool = False) -> None:
 
     def md(label, val):
         return (f"<p style='font-size:17px; color:gray; margin:0'>{label}</p>"
@@ -495,7 +670,7 @@ def render_preview(config, has_protein: bool) -> None:
 
         with st.expander("⚙️ General", expanded=True):
             row("Force field", config.selected_ff,
-                "Number of systems",   str(config.n_systems))
+                "Number of systems", str(config.n_systems))
             if config.output_name:
                 row("Output name", config.output_name)
 
@@ -508,49 +683,75 @@ def render_preview(config, has_protein: bool) -> None:
         with st.expander("💧 Solvation", expanded=True):
             st.code(config.solvation or "—")
 
-        with st.expander("🧪 Membrane Composition", expanded=True):
-            row("Absolute values", str(config.abs_lip_vals),
-                "Template active", str(config.template_active))
-
-            headers = ["Lipid",
-                       "NU" if config.abs_lip_vals else "RU",
-                       "NL" if config.abs_lip_vals else "RL",
-                       "AU", "AL"]
-            if config.template_active and isinstance(config.entries, dict):
-                for template_name, entries in config.entries.items():
-                    st.markdown(f"**{template_name}**")
-                    st.dataframe(pd.DataFrame(entries, columns=headers),
+        # ▼ hide entirely when protein_only
+        if not protein_only:
+            with st.expander("🧪 Membrane Composition", expanded=True):
+                row("Absolute values", str(config.abs_lip_vals),
+                    "Template active",  str(config.template_active))
+                headers = ["Lipid",
+                           "NU" if config.abs_lip_vals else "RU",
+                           "NL" if config.abs_lip_vals else "RL",
+                           "AU", "AL"]
+                if config.template_active and isinstance(config.entries, dict):
+                    for template_name, entries in config.entries.items():
+                        st.markdown(f"**{template_name}**")
+                        st.dataframe(pd.DataFrame(entries, columns=headers),
+                                     use_container_width=True, hide_index=True)
+                elif config.entries:
+                    st.dataframe(pd.DataFrame(config.entries, columns=headers),
                                  use_container_width=True, hide_index=True)
-            elif config.entries:
-                st.dataframe(pd.DataFrame(config.entries, columns=headers),
-                             use_container_width=True, hide_index=True)
 
         if has_protein:
             with st.expander("🧬 Protein Insertion", expanded=True):
-                p = config.protein_params.get("R0001", {})
 
-                row("PDB file", os.path.basename(config.pdb_path) or "—",
-                    "ITP file", os.path.basename(config.itp_path) or "—")
+                # Distance mode — show once at the top if active
+                if getattr(config, "use_protein_distance", False) and len(config.protein_files) == 2:
+                    row("Distance between proteins (nm)", str(config.protein_distance))
+                    st.divider()
 
-                if config.randomize_pos:
-                    row("Randomize position", "Yes",
-                        "Re-randomize per system" if config.n_systems != 1 else "",
-                        str(config.randomize_pos_every) if config.n_systems != 1 else "")
-                else:
-                    row("Position X, Y (nm)", f"{p.get('cx', 0.0)}, {p.get('cy', 0.0)}")
+                for pdb_name, paths in config.protein_files.items():
+                    p = config.protein_params.get("R0001", {}).get(pdb_name, {})
+                    
+                    st.markdown(f"#### {pdb_name}")
+                    row("PDB file", pdb_name,
+                        "ITP file", os.path.basename(paths["itp_path"]))
 
-                if config.z_method == "Absolute z position":
-                    row("Position Z (nm)", str(p.get("cz", 0.0)))
-                else:
-                    row("Distance to membrane (nm)", str(config.distance_to_mem))
+                    # Per-protein insertion params (stored in insertion_params)
+                    insertion_params = getattr(config, "insertion_params", {})
+                    ip = insertion_params.get(pdb_name, {})
 
-                if config.randomize_rot:
-                    row("Randomize rotation", "Yes",
-                        "Re-randomize per system" if config.n_systems != 1 else "",
-                        str(config.randomize_rot_every) if config.n_systems != 1 else "")
-                else:
-                    row("Rotation X, Y, Z (°)",
-                        f"{p.get('rx', 0.0)}, {p.get('ry', 0.0)}, {p.get('rz', 0.0)}")
+                    # Multiple copies — only relevant for single-protein setups
+                    if ip.get("more_copies") and ip.get("copy_number", 1) > 1:
+                        row("Copies per system", str(ip["copy_number"]),
+                            "Randomize rotation (all copies)", str(ip.get("randomize_rot_all_copies", False)))
+
+                    # Position
+                    if getattr(config, "use_protein_distance", False) and len(config.protein_files) == 2:
+                        pass  # already shown above
+                    elif ip.get("randomize_pos"):
+                        row("Position", "Randomized",
+                            "Re-randomize per system" if config.n_systems > 1 else "",
+                            str(ip.get("randomize_pos_every", False)) if config.n_systems > 1 else "")
+                    else:
+                        row("Position X, Y (nm)", f"{p.get('cx', 0.0)}, {p.get('cy', 0.0)}")
+
+                    # Z placement
+                    if ip.get("z_method") == "Height above Membrane":
+                        row("Z placement", "Height above Membrane",
+                            "Distance to membrane (nm)", str(ip.get("distance_to_mem", 2.0)))
+                    else:
+                        row("Z placement", "Absolute", "Z (nm)", str(p.get("cz", 0.0)))
+
+                    # Rotation
+                    if ip.get("randomize_rot"):
+                        row("Rotation", "Randomized",
+                            "Re-randomize per system" if config.n_systems > 1 else "",
+                            str(ip.get("randomize_rot_every", False)) if config.n_systems > 1 else "")
+                    else:
+                        row("Rotation X, Y, Z (°)",
+                            f"{p.get('rx', 0.0)}, {p.get('ry', 0.0)}, {p.get('rz', 0.0)}")
+
+                    st.divider()
 
         with st.container(key="nav_preview"):
             st.divider()
@@ -558,7 +759,7 @@ def render_preview(config, has_protein: bool) -> None:
             if left.button("← Back", use_container_width=True):
                 st.session_state["_preview_action"] = "back"
                 st.rerun()
-            if right.button("🔨 BUILD", use_container_width=True, type="primary"):
+            if right.button("🔨 Build", use_container_width=True, type="primary"):
                 st.session_state["_preview_action"] = "build"
                 st.rerun()
 
