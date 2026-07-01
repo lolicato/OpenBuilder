@@ -18,6 +18,7 @@ class MartinizeConfig:
     # Preprocessing flags
     clean_structure: bool = True
     selected_chains: List[str] = field(default_factory=list)
+    chain_ranges: Dict[str, List[int]] = field(default_factory=dict)
     
     # Mutation options
     do_mutation: bool = False

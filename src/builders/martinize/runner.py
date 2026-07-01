@@ -77,6 +77,42 @@ class MartinizeRunner:
         atoms.write(output_path)
         return output_path
 
+    def select_chains_with_ranges(self, input_path: str, selected_chains: List[str],
+                                   chain_ranges: Dict[str, List[int]], output_dir: str) -> str:
+        """Select chains and optionally trim each to a residue range.
+
+        Parameters
+        ----------
+        chain_ranges : dict
+            Mapping of chain ID -> [first_resid, last_resid].
+            If a chain is absent from the dict or the list is empty,
+            the entire chain is kept.
+        """
+        u = mda.Universe(input_path)
+        parts = []
+        # Determine whether to use chainID or segid
+        use_segid = False
+        test_query = " or ".join([f"chainID {c}" for c in selected_chains])
+        if len(u.select_atoms(test_query)) == 0:
+            use_segid = True
+        id_keyword = "segid" if use_segid else "chainID"
+
+        for chain in selected_chains:
+            rng = chain_ranges.get(chain, [])
+            if rng and len(rng) == 2 and rng[0] is not None and rng[1] is not None:
+                q = f"({id_keyword} {chain}) and (resid {rng[0]}:{rng[1]})"
+            else:
+                q = f"{id_keyword} {chain}"
+            parts.append(q)
+
+        full_query = " or ".join([f"({p})" for p in parts])
+        atoms = u.select_atoms(full_query)
+        if len(atoms) == 0:
+            raise ValueError(f"No atoms found for selection: {full_query}")
+        output_path = os.path.join(output_dir, "protein_selected_chains.pdb")
+        atoms.write(output_path)
+        return output_path
+
     def get_residues_for_chain(self, input_path: str, chain_id: str) -> List[Dict[str, Any]]:
         u = mda.Universe(input_path)
         atoms = u.select_atoms(f"protein and chainID {chain_id}")

@@ -134,6 +134,7 @@ class MartinizeGui:
                             st.session_state.selected_chain_path = ""
                             st.session_state.mutated_path = ""
                             st.session_state.current_working_structure = atomistic_pdb_path
+                            st.session_state.fetched_pdb_success = ""
                         st.success(f"Uploaded: {uploaded_atomistic.name}")
                 else:
                     col1, col2 = st.columns([3, 1])
@@ -184,88 +185,178 @@ class MartinizeGui:
                         st.session_state.cleaned_path = ""
                         st.session_state.current_working_structure = st.session_state.atomistic_path
 
-                    # Step 2: Chain selection
+                    # Step 2: Chain selection (CHARMM-GUI style)
                     st.subheader("Chain Selection")
                     active_struct = st.session_state.current_working_structure
+                    chain_ranges = data.get("chain_ranges", {})
                     try:
                         chains = self.runner.get_chains(active_struct)
                         summaries = self.runner.get_chain_summary(active_struct)
                         
                         if chains:
-                            st.write("Detected chains:")
+                            # Table header
+                            hdr_cols = st.columns([0.5, 1, 1.5, 1.5, 1.5, 1.5])
+                            hdr_cols[0].markdown("**Select**")
+                            hdr_cols[1].markdown("**Chain ID**")
+                            hdr_cols[2].markdown("**# Residues**")
+                            hdr_cols[3].markdown("**First Resid**")
+                            hdr_cols[4].markdown("**Last Resid**")
+                            hdr_cols[5].markdown("**Residue Range**")
+
+                            # Determine which chains were previously selected
+                            prev_selected = [c for c in selected_chains if c in chains] if selected_chains else chains
+
+                            selected_chains = []
                             for c in chains:
                                 s = summaries.get(c, {})
+                                row_cols = st.columns([0.5, 1, 1.5, 1.5, 1.5, 1.5])
+                                default_checked = c in prev_selected
+                                is_selected = row_cols[0].checkbox(
+                                    "sel", value=default_checked,
+                                    key=f"chain_sel_{c}", label_visibility="collapsed"
+                                )
+                                row_cols[1].write(c)
                                 if s:
-                                    st.write(f"- **Chain {c}**: {s.get('first_resname')}{s.get('first_resid')} → {s.get('last_resname')}{s.get('last_resid')} ({s.get('n_residues')} residues)")
+                                    row_cols[2].write(str(s.get("n_residues", "—")))
+                                    row_cols[3].write(str(s.get("first_resid", "—")))
+                                    row_cols[4].write(str(s.get("last_resid", "—")))
                                 else:
-                                    st.write(f"- **Chain {c}**")
-                                    
-                            # Determine defaults
-                            default_selected = [c for c in selected_chains if c in chains] or chains
-                            selected_chains = st.multiselect("Select chains to keep:", options=chains, default=default_selected)
-                            
-                            if set(selected_chains) != set(chains):
-                                # Build chain selected path if changed
-                                if not st.session_state.selected_chain_path or data.get("selected_chains_last") != selected_chains:
-                                    try:
-                                        with st.spinner("Filtering chains..."):
-                                            selected_path = self.runner.select_chains(active_struct, selected_chains, str(temp_dir))
-                                            st.session_state.selected_chain_path = selected_path
-                                            st.session_state.current_working_structure = selected_path
-                                            data["selected_chains_last"] = selected_chains
-                                    except Exception as e:
-                                        st.error(f"Chain selection failed: {str(e)}")
-                                if st.session_state.selected_chain_path:
-                                    st.info(f"Selected chains {selected_chains} extracted.")
+                                    row_cols[2].write("—")
+                                    row_cols[3].write("—")
+                                    row_cols[4].write("—")
+
+                                if is_selected:
+                                    selected_chains.append(c)
+                                    # Residue range inputs (optional trimming)
+                                    if s:
+                                        first_resid = s.get("first_resid", 1)
+                                        last_resid = s.get("last_resid", 9999)
+                                        prev_range = chain_ranges.get(c, [first_resid, last_resid])
+                                        range_cols = row_cols[5].columns(2)
+                                        range_start = range_cols[0].number_input(
+                                            "From", min_value=first_resid, max_value=last_resid,
+                                            value=max(first_resid, prev_range[0]) if prev_range and len(prev_range) == 2 else first_resid,
+                                            key=f"chain_range_start_{c}", label_visibility="collapsed"
+                                        )
+                                        range_end = range_cols[1].number_input(
+                                            "To", min_value=first_resid, max_value=last_resid,
+                                            value=min(last_resid, prev_range[1]) if prev_range and len(prev_range) == 2 else last_resid,
+                                            key=f"chain_range_end_{c}", label_visibility="collapsed"
+                                        )
+                                        chain_ranges[c] = [int(range_start), int(range_end)]
+                                    else:
+                                        chain_ranges[c] = []
+
+                            if not selected_chains:
+                                st.warning("⚠️ Please select at least one chain.")
                             else:
-                                st.session_state.selected_chain_path = ""
-                                if clean_structure and st.session_state.cleaned_path:
-                                    st.session_state.current_working_structure = st.session_state.cleaned_path
+                                # Determine if any chain was deselected or ranges differ from full
+                                needs_filter = set(selected_chains) != set(chains)
+                                if not needs_filter:
+                                    # Check if any residue range is narrower than the full chain
+                                    for c in selected_chains:
+                                        s = summaries.get(c, {})
+                                        rng = chain_ranges.get(c, [])
+                                        if s and rng and len(rng) == 2:
+                                            if rng[0] > s.get("first_resid", rng[0]) or rng[1] < s.get("last_resid", rng[1]):
+                                                needs_filter = True
+                                                break
+
+                                if needs_filter:
+                                    # Build a unique key from the current selection + ranges to detect changes
+                                    selection_key = str(sorted(selected_chains)) + str(sorted(chain_ranges.items()))
+                                    if not st.session_state.selected_chain_path or data.get("selection_key_last") != selection_key:
+                                        try:
+                                            with st.spinner("Filtering chains..."):
+                                                selected_path = self.runner.select_chains_with_ranges(
+                                                    active_struct, selected_chains, chain_ranges, str(temp_dir)
+                                                )
+                                                st.session_state.selected_chain_path = selected_path
+                                                st.session_state.current_working_structure = selected_path
+                                                data["selection_key_last"] = selection_key
+                                        except Exception as e:
+                                            st.error(f"Chain selection failed: {str(e)}")
+                                    if st.session_state.selected_chain_path:
+                                        st.info(f"Selected chains {selected_chains} extracted.")
                                 else:
-                                    st.session_state.current_working_structure = st.session_state.atomistic_path
+                                    st.session_state.selected_chain_path = ""
+                                    if clean_structure and st.session_state.cleaned_path:
+                                        st.session_state.current_working_structure = st.session_state.cleaned_path
+                                    else:
+                                        st.session_state.current_working_structure = st.session_state.atomistic_path
                         else:
                             st.warning("No protein chains could be identified.")
                     except Exception as e:
                         st.error(f"Could not load chains: {str(e)}")
 
-                    # Step 3: Mutation
-                    st.subheader("Optional Mutation")
+                    # Step 3: Mutation (CHARMM-GUI compact layout)
+                    st.subheader("Mutation")
                     do_mutation = st.checkbox("Introduce residue mutation", value=do_mutation)
                     if do_mutation:
                         active_struct = st.session_state.current_working_structure
                         try:
                             m_chains = self.runner.get_chains(active_struct)
-                            mutation_chain = st.selectbox("Mutation Chain:", options=m_chains, index=0 if mutation_chain not in m_chains else m_chains.index(mutation_chain))
-                            
+
+                            # Header row
+                            hdr = st.columns([1, 1, 1, 1, 0.5, 1.5])
+                            hdr[0].markdown("**SEGID**")
+                            hdr[1].markdown("**RESID**")
+                            hdr[2].markdown("**Amino acid**")
+                            hdr[3].markdown("**Mutant**")
+                            # hdr[4] is the dash separator column
+                            # hdr[5] is the Apply button column
+
+                            # Selector row
+                            sel_cols = st.columns([1, 1, 1, 1, 0.5, 1.5])
+
+                            mutation_chain = sel_cols[0].selectbox(
+                                "Chain", options=m_chains,
+                                index=0 if mutation_chain not in m_chains else m_chains.index(mutation_chain),
+                                key="mut_chain_sel", label_visibility="collapsed"
+                            )
+
                             residues = self.runner.get_residues_for_chain(active_struct, mutation_chain)
-                            
-                            # Optional residue type filter
-                            res_types = sorted(list(set(r["resname"] for r in residues)))
-                            filter_type = st.checkbox("Filter by amino-acid type")
-                            filtered_residues = residues
-                            if filter_type:
-                                target_filter = st.selectbox("Filter type:", options=res_types)
-                                filtered_residues = [r for r in residues if r["resname"] == target_filter]
-                            
-                            res_labels = [r["label"] for r in filtered_residues]
-                            if res_labels:
-                                selected_label = st.selectbox(
-                                    "Residue to mutate:", 
-                                    options=res_labels,
-                                    index=0 if not mutation_residue_idx else (
-                                        res_labels.index(f"{mutation_residue_name}{mutation_residue_idx}") 
-                                        if f"{mutation_residue_name}{mutation_residue_idx}" in res_labels else 0
-                                    )
+                            resid_list = [r["resid"] for r in residues]
+                            resname_list = [r["resname"] for r in residues]
+
+                            if resid_list:
+                                # RESID selector
+                                default_resid_idx = 0
+                                if mutation_residue_idx and mutation_residue_idx in resid_list:
+                                    default_resid_idx = resid_list.index(mutation_residue_idx)
+                                sel_resid = sel_cols[1].selectbox(
+                                    "RESID", options=resid_list,
+                                    index=default_resid_idx,
+                                    key="mut_resid_sel", label_visibility="collapsed"
                                 )
-                                # Find actual residue details
-                                selected_res = next(r for r in filtered_residues if r["label"] == selected_label)
-                                mutation_residue_idx = selected_res["resid"]
-                                mutation_residue_name = selected_res["resname"]
-                                
-                                standard_aas = ["ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU", "GLY", "HIS", "ILE", "LEU", "LYS", "MET", "PHE", "PRO", "SER", "THR", "TRP", "TYR", "VAL"]
-                                mutation_target = st.selectbox("Mutate into:", options=standard_aas, index=standard_aas.index(mutation_target) if mutation_target in standard_aas else 0)
-                                
-                                if st.button("Apply Mutation"):
+
+                                # Find the amino acid for the selected RESID
+                                matched_res = next((r for r in residues if r["resid"] == sel_resid), residues[0])
+                                current_aa = matched_res["resname"]
+
+                                # Amino acid display (read-only, shows what's at the selected RESID)
+                                sel_cols[2].selectbox(
+                                    "AA", options=[current_aa],
+                                    index=0, key="mut_aa_display", label_visibility="collapsed",
+                                    disabled=True
+                                )
+
+                                mutation_residue_idx = matched_res["resid"]
+                                mutation_residue_name = matched_res["resname"]
+
+                                # Mutant selector
+                                standard_aas = ["ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU",
+                                                "GLY", "HIS", "ILE", "LEU", "LYS", "MET", "PHE",
+                                                "PRO", "SER", "THR", "TRP", "TYR", "VAL"]
+                                mutation_target = sel_cols[3].selectbox(
+                                    "Mutant", options=standard_aas,
+                                    index=standard_aas.index(mutation_target) if mutation_target in standard_aas else 0,
+                                    key="mut_target_sel", label_visibility="collapsed"
+                                )
+
+                                sel_cols[4].markdown("→")
+
+                                if sel_cols[5].button("Apply Mutation", type="primary"):
                                     try:
                                         with st.spinner("Running PyMOL for mutagenesis..."):
                                             mutated = self.runner.mutate_with_pymol(
@@ -277,11 +368,11 @@ class MartinizeGui:
                                             )
                                             st.session_state.mutated_path = mutated
                                             st.session_state.current_working_structure = mutated
-                                            st.session_state.mutation_success_msg = f"Mutation applied successfully: {mutation_residue_name}{mutation_residue_idx} → {mutation_target} on Chain {mutation_chain}."
+                                            st.session_state.mutation_success_msg = f"Mutation applied: {mutation_residue_name}{mutation_residue_idx} → {mutation_target} on Chain {mutation_chain}."
                                     except Exception as e:
                                         st.error(f"Mutation failed: {str(e)}")
                             else:
-                                st.warning("No residues found in selection.")
+                                st.warning("No residues found for the selected chain.")
                         except Exception as e:
                             st.error(f"Error preparing mutations: {str(e)}")
                             
@@ -364,6 +455,7 @@ class MartinizeGui:
             "fetch_pdb_id": fetch_pdb_id,
             "clean_structure": clean_structure,
             "selected_chains": selected_chains,
+            "chain_ranges": chain_ranges,
             "do_mutation": do_mutation,
             "mutation_chain": mutation_chain,
             "mutation_residue_idx": mutation_residue_idx,
@@ -392,6 +484,7 @@ class MartinizeGui:
             fetch_pdb_id=fetch_pdb_id,
             clean_structure=clean_structure,
             selected_chains=selected_chains,
+            chain_ranges=chain_ranges,
             do_mutation=do_mutation,
             mutation_chain=mutation_chain,
             mutation_residue_idx=mutation_residue_idx,
