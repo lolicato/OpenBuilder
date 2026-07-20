@@ -342,9 +342,11 @@ quit
                 if config.clean_structure:
                     current_structure = self.clean_protein(current_structure, output_dir)
 
-                # 2. Select chains
+                # 2. Select chains (with ranges)
                 if config.selected_chains:
-                    current_structure = self.select_chains(current_structure, config.selected_chains, output_dir)
+                    current_structure = self.select_chains_with_ranges(
+                        current_structure, config.selected_chains, config.chain_ranges, output_dir
+                    )
 
                 # 3. Optional Mutation
                 if config.do_mutation:

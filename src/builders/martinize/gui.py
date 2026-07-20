@@ -31,7 +31,21 @@ class MartinizeGui:
             st.session_state.mutation_success_msg = ""
         if "fetched_pdb_success" not in st.session_state:
             st.session_state.fetched_pdb_success = ""
-
+    def _reset_preprocessor_state(self, data):
+        st.session_state.cleaned_path = ""
+        st.session_state.selected_chain_path = ""
+        st.session_state.mutated_path = ""
+        st.session_state.current_working_structure = ""
+        st.session_state.mutation_success_msg = ""
+        st.session_state.fetched_pdb_success = ""
+        data["selected_chains"] = []
+        data["chain_ranges"] = {}
+        data["do_mutation"] = False
+        data["mutation_chain"] = ""
+        data["mutation_residue_idx"] = None
+        data["mutation_residue_name"] = ""
+        data["mutation_target"] = ""
+        data["selection_key_last"] = ""
     def render(self) -> MartinizeConfig:
         st.title("🧬 Protein Structure Preprocessor")
         st.caption("Upload and preprocess atomistic protein structures, or import pre-built coarse-grained models.")
@@ -60,6 +74,7 @@ class MartinizeGui:
         fetch_pdb_id = data.get("fetch_pdb_id", "")
         clean_structure = data.get("clean_structure", True)
         selected_chains = data.get("selected_chains", [])
+        chain_ranges = data.get("chain_ranges", {})
         do_mutation = data.get("do_mutation", False)
         mutation_chain = data.get("mutation_chain", "")
         mutation_residue_idx = data.get("mutation_residue_idx", None)
@@ -130,11 +145,8 @@ class MartinizeGui:
                             f.write(uploaded_atomistic.getvalue())
                         if st.session_state.atomistic_path != atomistic_pdb_path:
                             st.session_state.atomistic_path = atomistic_pdb_path
-                            st.session_state.cleaned_path = ""
-                            st.session_state.selected_chain_path = ""
-                            st.session_state.mutated_path = ""
+                            self._reset_preprocessor_state(data)
                             st.session_state.current_working_structure = atomistic_pdb_path
-                            st.session_state.fetched_pdb_success = ""
                         st.success(f"Uploaded: {uploaded_atomistic.name}")
                 else:
                     col1, col2 = st.columns([3, 1])
@@ -149,9 +161,7 @@ class MartinizeGui:
                                     with st.spinner(f"Downloading {fetch_pdb_id} from RCSB..."):
                                         path = self.runner.fetch_pdb(fetch_pdb_id, str(temp_dir))
                                         st.session_state.atomistic_path = path
-                                        st.session_state.cleaned_path = ""
-                                        st.session_state.selected_chain_path = ""
-                                        st.session_state.mutated_path = ""
+                                        self._reset_preprocessor_state(data)
                                         st.session_state.current_working_structure = path
                                         st.session_state.fetched_pdb_success = f"Successfully fetched PDB: {fetch_pdb_id}"
                                 except Exception as e:
@@ -165,7 +175,6 @@ class MartinizeGui:
                 # Show details if we have an atomistic path
                 if st.session_state.atomistic_path:
                     st.write(f"**Loaded structure file:** `{st.session_state.atomistic_path}`")
-
                     # Step 1: Clean structure
                     st.subheader("Structure Clean-up")
                     clean_structure = st.checkbox("Clean structure with MDAnalysis (removes water, ligand, ions, keeping protein only)", value=clean_structure)
@@ -176,18 +185,20 @@ class MartinizeGui:
                                 with st.spinner("Cleaning structure..."):
                                     cleaned = self.runner.clean_protein(st.session_state.atomistic_path, str(temp_dir))
                                     st.session_state.cleaned_path = cleaned
-                                    st.session_state.current_working_structure = cleaned
                             except Exception as e:
                                 st.error(f"Cleaning failed: {str(e)}")
                         if st.session_state.cleaned_path:
                             st.info("Structure cleaned: Water and non-protein residues removed.")
+                            active_struct = st.session_state.cleaned_path
+                        else:
+                            active_struct = st.session_state.atomistic_path
                     else:
-                        st.session_state.cleaned_path = ""
-                        st.session_state.current_working_structure = st.session_state.atomistic_path
+                        active_struct = st.session_state.atomistic_path
+                    
+                    st.session_state.current_working_structure = active_struct
 
                     # Step 2: Chain selection (CHARMM-GUI style)
                     st.subheader("Chain Selection")
-                    active_struct = st.session_state.current_working_structure
                     chain_ranges = data.get("chain_ranges", {})
                     try:
                         chains = self.runner.get_chains(active_struct)
@@ -249,41 +260,6 @@ class MartinizeGui:
 
                             if not selected_chains:
                                 st.warning("⚠️ Please select at least one chain.")
-                            else:
-                                # Determine if any chain was deselected or ranges differ from full
-                                needs_filter = set(selected_chains) != set(chains)
-                                if not needs_filter:
-                                    # Check if any residue range is narrower than the full chain
-                                    for c in selected_chains:
-                                        s = summaries.get(c, {})
-                                        rng = chain_ranges.get(c, [])
-                                        if s and rng and len(rng) == 2:
-                                            if rng[0] > s.get("first_resid", rng[0]) or rng[1] < s.get("last_resid", rng[1]):
-                                                needs_filter = True
-                                                break
-
-                                if needs_filter:
-                                    # Build a unique key from the current selection + ranges to detect changes
-                                    selection_key = str(sorted(selected_chains)) + str(sorted(chain_ranges.items()))
-                                    if not st.session_state.selected_chain_path or data.get("selection_key_last") != selection_key:
-                                        try:
-                                            with st.spinner("Filtering chains..."):
-                                                selected_path = self.runner.select_chains_with_ranges(
-                                                    active_struct, selected_chains, chain_ranges, str(temp_dir)
-                                                )
-                                                st.session_state.selected_chain_path = selected_path
-                                                st.session_state.current_working_structure = selected_path
-                                                data["selection_key_last"] = selection_key
-                                        except Exception as e:
-                                            st.error(f"Chain selection failed: {str(e)}")
-                                    if st.session_state.selected_chain_path:
-                                        st.info(f"Selected chains {selected_chains} extracted.")
-                                else:
-                                    st.session_state.selected_chain_path = ""
-                                    if clean_structure and st.session_state.cleaned_path:
-                                        st.session_state.current_working_structure = st.session_state.cleaned_path
-                                    else:
-                                        st.session_state.current_working_structure = st.session_state.atomistic_path
                         else:
                             st.warning("No protein chains could be identified.")
                     except Exception as e:
@@ -293,21 +269,18 @@ class MartinizeGui:
                     st.subheader("Mutation")
                     do_mutation = st.checkbox("Introduce residue mutation", value=do_mutation)
                     if do_mutation:
-                        active_struct = st.session_state.current_working_structure
                         try:
                             m_chains = self.runner.get_chains(active_struct)
 
                             # Header row
-                            hdr = st.columns([1, 1, 1, 1, 0.5, 1.5])
+                            hdr = st.columns([1.2, 1.2, 1.2, 1.2])
                             hdr[0].markdown("**SEGID**")
                             hdr[1].markdown("**RESID**")
                             hdr[2].markdown("**Amino acid**")
                             hdr[3].markdown("**Mutant**")
-                            # hdr[4] is the dash separator column
-                            # hdr[5] is the Apply button column
 
                             # Selector row
-                            sel_cols = st.columns([1, 1, 1, 1, 0.5, 1.5])
+                            sel_cols = st.columns([1.2, 1.2, 1.2, 1.2])
 
                             mutation_chain = sel_cols[0].selectbox(
                                 "Chain", options=m_chains,
@@ -317,7 +290,6 @@ class MartinizeGui:
 
                             residues = self.runner.get_residues_for_chain(active_struct, mutation_chain)
                             resid_list = [r["resid"] for r in residues]
-                            resname_list = [r["resname"] for r in residues]
 
                             if resid_list:
                                 # RESID selector
@@ -353,41 +325,10 @@ class MartinizeGui:
                                     index=standard_aas.index(mutation_target) if mutation_target in standard_aas else 0,
                                     key="mut_target_sel", label_visibility="collapsed"
                                 )
-
-                                sel_cols[4].markdown("→")
-
-                                if sel_cols[5].button("Apply Mutation", type="primary"):
-                                    try:
-                                        with st.spinner("Running PyMOL for mutagenesis..."):
-                                            mutated = self.runner.mutate_with_pymol(
-                                                active_struct, 
-                                                mutation_chain, 
-                                                mutation_residue_idx, 
-                                                mutation_target, 
-                                                str(temp_dir)
-                                            )
-                                            st.session_state.mutated_path = mutated
-                                            st.session_state.current_working_structure = mutated
-                                            st.session_state.mutation_success_msg = f"Mutation applied: {mutation_residue_name}{mutation_residue_idx} → {mutation_target} on Chain {mutation_chain}."
-                                    except Exception as e:
-                                        st.error(f"Mutation failed: {str(e)}")
                             else:
                                 st.warning("No residues found for the selected chain.")
                         except Exception as e:
                             st.error(f"Error preparing mutations: {str(e)}")
-                            
-                        if st.session_state.mutation_success_msg and st.session_state.mutated_path:
-                            st.success(st.session_state.mutation_success_msg)
-                    else:
-                        st.session_state.mutated_path = ""
-                        st.session_state.mutation_success_msg = ""
-                        # Revert current working structure
-                        if st.session_state.selected_chain_path:
-                            st.session_state.current_working_structure = st.session_state.selected_chain_path
-                        elif clean_structure and st.session_state.cleaned_path:
-                            st.session_state.current_working_structure = st.session_state.cleaned_path
-                        else:
-                            st.session_state.current_working_structure = st.session_state.atomistic_path
 
                     # Step 4: Martinize2 Options
                     st.subheader("Martinize Coarse-Graining Options")
