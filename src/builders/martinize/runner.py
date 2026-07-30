@@ -195,7 +195,7 @@ quit
             
         return True, "Validation successful."
 
-    def run_martinize(self, config: MartinizeConfig, input_path: str, output_dir: str) -> Tuple[str, str, str, str]:
+    def run_martinize(self, config: MartinizeConfig, input_path: str, output_dir: str) -> Tuple[str, str, str, str, str]:
         input_path = os.path.abspath(input_path)
         output_dir = os.path.abspath(output_dir)
         output_cg = os.path.join(output_dir, "protein_cg.pdb")
