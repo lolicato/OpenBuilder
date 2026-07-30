@@ -1,60 +1,30 @@
 # CLI Usage
 
-OpenMembraneBuilder can run without the GUI using a saved JSON configuration.
+OpenMembraneBuilder can run without the GUI by using a saved JSON configuration.
 
 ```bash
 python app.py --no-gui config.json
 ```
 
----
+## What you can do
 
-## 🎯 Why use the CLI
+### Re-run a build
+Use the saved `config.json` to reproduce a previous setup.
 
-The CLI mode is useful for:
+### Automate builds
+Edit the JSON file to create different systems. Once familiar with the command style this allows for batched runs automated via python or bash scripts.
 
-- Repeating a previous build  
-- Quickly swapping proteins  
-- Automating workflows  
-- Running batch simulations  
+## Typical workflow
 
----
+1. Build once in the [GUI](gui.md).
+2. Reuse the saved `config.json`.
+3. Run the same build again with the CLI.
 
-## 🔁 Typical Workflow
+## What comes out
 
-### 1. Create a configuration via GUI
+The CLI produces the same output structure as the GUI: a project folder in `outputs/`, a ZIP archive in `downloads/`, and a saved configuration for reproducibility.
 
-```bash
-streamlit run app.py
-```
+## Related pages
 
-Build your system once. This generates a project folder with a `config.json`.
-
----
-
-### 2. Re-run using CLI
-
-```bash
-python app.py --no-gui outputs/OpenMembraneBuilder-xxxx/config.json
-```
-
----
-
-## ✏️ Editing configurations
-
-You can modify `config.json` to:
-
-- Change protein files  
-- Adjust membrane composition  
-- Modify box size or number of systems  
-
-This enables fast iteration without reopening the GUI.
-
----
-
-## 📦 Output
-
-The CLI produces the same outputs as the GUI:
-
-- Project folder in `outputs/`  
-- ZIP archive in `downloads/`  
-- Full reproducibility via `config.json`  
+- See the [GUI Usage](gui.md) page for the visual workflow.
+- See the [Output Structure](outputs.md) page for generated files.

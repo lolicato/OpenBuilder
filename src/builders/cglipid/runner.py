@@ -38,9 +38,12 @@ class CGLipidRunner:
         system_path = os.path.join(config.temp_folder, "cglipid_validation", system_name)
         os.makedirs(system_path, exist_ok=True)
 
-        molecule_builders = [self._build_molecule_builder(lipid) for lipid in config.lipids]
+        molecule_builders = [
+            self._build_molecule_builder(lipid)
+            for lipid in config.lipids.values()
+        ]
 
-        for lipid, builder in zip(config.lipids, molecule_builders):
+        for lipid, builder in zip(config.lipids.values(), molecule_builders):
             lipid["molecule_builder"] = builder
 
         config.validation_output_path = system_path
@@ -56,7 +59,7 @@ class CGLipidRunner:
             json.dump(config.metadata, f, indent=4)
 
         membrane_lipids = " ".join(
-            [f"lipid:{lipid['lipid_name']}:1:charge:lib" for lipid in config.lipids]
+            [f"lipid:{lipid['lipid_name']}:1:charge:lib" for lipid in config.lipids.values()]
         )
 
         coby_args = {

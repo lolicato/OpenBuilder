@@ -1,63 +1,39 @@
 # GUI Usage
 
-OpenMembraneBuilder can be launched using Streamlit:
+OpenMembraneBuilder can be launched in the Streamlit interface for guided system setup.
 
 ```bash
 streamlit run app.py
 ```
 
----
+## What you configure
 
-## 🧭 What you can configure
+You can choose the pathway you want guided by some initial questions. Then there are all inputs displayed you can specify what exactly you want to have. Right now these includes systems containing a protein and/or a membrane as well as some preprocessing steps for these
 
-The GUI allows you to configure:
 
-- System type (membrane or membrane + protein)  
-- Box size  
-- Martini force field  
-- Membrane composition  
-- Solvation and salt molarity  
-- Number of replicas (systems)  
-- Protein input files  
-- Protein placement and rotation  
 
----
+<img src="/pictures/initial-questions.png" alt="" width="900">
 
-## 🚀 Build Process
 
-Press the **BUILD** button to generate your systems.
 
-This will create a project folder:
+For more information regarding the options see the different builders:
 
-```
-outputs/<project_name>/
-```
+- [Membrane](membrane_builder.md)
+- [Martinize](martinize_builder.md)
+- [Lipid](cglipid_builder.md)
 
-and automatically generate a downloadable ZIP archive.
 
----
 
-## 🧬 Protein Input Files
 
-For protein-containing systems, upload:
+## What happens after build
 
-- A coarse-grained `.pdb` file  
-- The corresponding `.itp` topology file  
+Press **BUILD** to generate the project folder under `outputs/`  if you use the local version or a downloadable ZIP archive in the webserver version. The final `config.json` is saved with the build so you can reuse the same setup later. This contains all teh values used to create your systems.
 
-These files are copied into:
+## Good to know
 
-```
-user_inputs/
-```
+Use the GUI when you want a guided workflow and visual control over each input. The saved configuration can later be reused from the CLI without reopening the interface.
 
-inside the output project folder, ensuring the build is fully reproducible.
+## Related pages
 
----
-
-## 📦 Output Summary
-
-After building, you will have:
-
-- A complete project folder inside `outputs/`  
-- A ZIP archive in `downloads/`  
-- All inputs and configuration stored for reuse  
+- See the [CLI Usage](cli.md) page for reuse from a saved configuration.
+- See the [Output Structure](outputs.md) page for generated files.

@@ -61,20 +61,21 @@ def _sync_widget_defaults(
         _ensure_valid_choice(f"cglipid_tail2_{row_id}", tail_labels)
         st.session_state.setdefault(f"cglipid_name_{row_id}", f"CUSTOM_LIPID_{row_id + 1}")
 
-
 def _collect_lipids_from_state(
     selected_ff: str,
     moltype_map: dict[str, str],
     head_map: dict[str, str],
     linker_map: dict[str, str],
     tail_display_to_token: dict[str, str],
-) -> tuple[bool, list[str], list[dict]]:
+) -> tuple[bool, list[str], dict]:
     errors = []
-    lipids = []
+    lipids = {}
 
     default_moltype = next(iter(moltype_map.values())) if moltype_map else ""
+    seen_names = set()
+    duplicate_names = set()
 
-    for row_id in st.session_state.get("cglipid_rows", []):
+    for i, row_id in enumerate(st.session_state.get("cglipid_rows", []), start=1):
         name = st.session_state.get(f"cglipid_name_{row_id}", "").strip()
         head_label = st.session_state.get(f"cglipid_head_{row_id}", "")
         linker_label = st.session_state.get(f"cglipid_linker_{row_id}", "")
@@ -86,6 +87,11 @@ def _collect_lipids_from_state(
 
         if not name:
             errors.append(f"Lipid row {row_id + 1}: please enter a lipid name.")
+        elif name in seen_names:
+            duplicate_names.add(name)
+        else:
+            seen_names.add(name)
+
         if head_label not in head_map:
             errors.append(f"Lipid row {row_id + 1}: please select a valid headgroup.")
         if linker_label not in linker_map:
@@ -95,27 +101,18 @@ def _collect_lipids_from_state(
         if not tail2_token:
             errors.append(f"Lipid row {row_id + 1}: please select a valid Tail 2.")
 
-        lipids.append(
-            {
-                "force_field": selected_ff,
-                "lipid_name": name,
-                "moltype": default_moltype,
-                "head": head_map.get(head_label, ""),
-                "linker": linker_map.get(linker_label, ""),
-                "tail1": tail1_token,
-                "tail2": tail2_token,
-            }
-        )
+        lipid_id = f"L{i:04d}"
+        lipids[lipid_id] = {
+            "force_field": selected_ff,
+            "lipid_name": name,
+            "moltype": default_moltype,
+            "head": head_map.get(head_label, ""),
+            "linker": linker_map.get(linker_label, ""),
+            "tail1": tail1_token,
+            "tail2": tail2_token,
+        }
 
-    seen = set()
-    duplicates = set()
-    for lipid in lipids:
-        n = lipid["lipid_name"]
-        if n in seen:
-            duplicates.add(n)
-        seen.add(n)
-
-    for dup in sorted(duplicates):
+    for dup in sorted(duplicate_names):
         errors.append(f"Duplicate lipid name: {dup}")
 
     if not selected_ff:
