@@ -19,11 +19,16 @@ theme:
 nav:
   - Home: index.md
   - Installation: installation.md
-  - Membrane Templates: membrane_templates.md
   - GUI Usage: gui.md
   - CLI Usage: cli.md
-  - JSON Config: json-config.md
-  - Output Structure: outputs.md
+  - Builders: 
+    - General: builders.md
+    - Membrane: membrane_builder.md
+    - Martinize: martinize_builder.md
+    - CGLipid: cglipid_builder.md
+  - Outputs: 
+    - General: outputs.md
+    - JSON Config: json-index.md
   - Citation: citation.md
   - Contributing: contributing.md
   - License: license.md
