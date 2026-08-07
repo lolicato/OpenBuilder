@@ -163,6 +163,11 @@ def render_configure(
     # ── Chain selection ───────────────────────────────────────────────────────
     st.subheader("Chain Selection")
 
+    # Always define these so the mutation block below can read them regardless
+    # of whether any chains exist in the structure.
+    new_selected: List[str] = []
+    new_ranges: Dict[str, List[int]] = {}
+
     if chains:
         prev_selected: List[str] = st.session_state.get(
             "selected_chains", config.selected_chains or chains
@@ -176,12 +181,9 @@ def render_configure(
         hdr[0].markdown("**Select**")
         hdr[1].markdown("**Chain ID**")
         hdr[2].markdown("**# Residues**")
-        hdr[3].markdown("**First Resid**")
-        hdr[4].markdown("**Last Resid**")
+        hdr[3].markdown("**First ResID**")
+        hdr[4].markdown("**Last ResID**")
         hdr[5].markdown("**Residue Range**")
-
-        new_selected: List[str] = []
-        new_ranges: Dict[str, List[int]] = {}
 
         for c in chains:
             s = summaries.get(c, {})
@@ -241,52 +243,99 @@ def render_configure(
         key="do_mutation",
     )
 
-    if do_mutation and chains:
-        mutation_chain = st.session_state.get("mutation_chain", config.mutation_chain)
-        mutation_residue_idx  = st.session_state.get("mutation_residue_idx",  config.mutation_residue_idx)
-        mutation_target       = st.session_state.get("mutation_target",       config.mutation_target)
+    if do_mutation and new_selected:
+        mutation_chain       = st.session_state.get("mutation_chain",       config.mutation_chain)
+        mutation_residue_idx = st.session_state.get("mutation_residue_idx", config.mutation_residue_idx)
+        mutation_target      = st.session_state.get("mutation_target",      config.mutation_target)
 
+        # Restrict chain options to the chains that are currently selected above.
+        # If the previously chosen mutation chain is no longer selected, fall back
+        # to the first selected chain.
+        if mutation_chain not in new_selected:
+            mutation_chain = new_selected[0]
+
+        # Column order: SEGID | Amino acid filter | RESID | Mutant
         hdr = st.columns([1.2, 1.2, 1.2, 1.2])
-        hdr[0].markdown("**SEGID**")
-        hdr[1].markdown("**RESID**")
-        hdr[2].markdown("**Amino acid**")
+        hdr[0].markdown("**Chain ID**")
+        hdr[1].markdown("**Amino acid**")
+        hdr[2].markdown("**ResID**")
         hdr[3].markdown("**Mutant**")
 
         sel = st.columns([1.2, 1.2, 1.2, 1.2])
+
+        # ── col 0: Chain ──────────────────────────────────────────────────────
         mutation_chain = sel[0].selectbox(
-            "Chain", options=chains,
-            index=0 if mutation_chain not in chains else chains.index(mutation_chain),
+            "Chain", options=new_selected,
+            index=new_selected.index(mutation_chain),
             key="mut_chain_sel", label_visibility="collapsed",
         )
-        # Residue list is stored by page.py after loading – fall back to empty
-        residues      = st.session_state.get(f"residues_{mutation_chain}", [])
-        resid_list    = [r["resid"] for r in residues]
 
-        if resid_list:
-            default_idx = 0
-            if mutation_residue_idx and mutation_residue_idx in resid_list:
-                default_idx = resid_list.index(mutation_residue_idx)
-            sel_resid = sel[1].selectbox(
-                "RESID", options=resid_list, index=default_idx,
-                key="mut_resid_sel", label_visibility="collapsed",
-            )
-            matched = next((r for r in residues if r["resid"] == sel_resid), residues[0])
-            sel[2].selectbox(
-                "AA", options=[matched["resname"]], index=0,
-                key="mut_aa_display", label_visibility="collapsed", disabled=True,
-            )
-            standard_aas = [
-                "ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU",
-                "GLY", "HIS", "ILE", "LEU", "LYS", "MET", "PHE",
-                "PRO", "SER", "THR", "TRP", "TYR", "VAL",
+        # Full residue list for this chain (pre-loaded by page.py, never modified)
+        all_residues = st.session_state.get(f"residues_{mutation_chain}", [])
+
+        # Filter to the residue range chosen for this chain in the table above.
+        chosen_range = new_ranges.get(mutation_chain, [])
+        if chosen_range and len(chosen_range) == 2:
+            range_start_val, range_end_val = chosen_range
+            range_residues = [
+                r for r in all_residues
+                if range_start_val <= r["resid"] <= range_end_val
             ]
-            sel[3].selectbox(
-                "Mutant", options=standard_aas,
-                index=standard_aas.index(mutation_target) if mutation_target in standard_aas else 0,
-                key="mut_target_sel", label_visibility="collapsed",
-            )
         else:
-            st.warning("No residues found for the selected chain.")
+            range_residues = all_residues
+
+        if range_residues:
+            # ── col 1: AA filter ─────────────────────────────────────────────
+            # Build a sorted list of unique residue names present in the
+            # range-filtered residue list. "All" means no AA filter.
+            unique_names = sorted({r["resname"] for r in range_residues})
+            aa_filter_opts = ["All"] + unique_names
+            prev_aa_filter = st.session_state.get("mut_aa_filter", "All")
+            if prev_aa_filter not in aa_filter_opts:
+                prev_aa_filter = "All"
+            aa_filter = sel[1].selectbox(
+                "AA filter", options=aa_filter_opts,
+                index=aa_filter_opts.index(prev_aa_filter),
+                key="mut_aa_filter", label_visibility="collapsed",
+            )
+
+            # Apply AA filter to get the residues shown in the RESID column.
+            if aa_filter == "All":
+                visible_residues = range_residues
+            else:
+                visible_residues = [r for r in range_residues if r["resname"] == aa_filter]
+
+            resid_list = [r["resid"] for r in visible_residues]
+
+            # ── col 2: RESID ─────────────────────────────────────────────────
+            if resid_list:
+                # If previously selected resid is no longer in the filtered
+                # list (e.g. user changed chain or AA filter), reset to first.
+                if mutation_residue_idx not in resid_list:
+                    mutation_residue_idx = resid_list[0]
+                sel_resid = sel[2].selectbox(
+                    "RESID", options=resid_list,
+                    index=resid_list.index(mutation_residue_idx),
+                    key="mut_resid_sel", label_visibility="collapsed",
+                )
+
+                # ── col 3: Mutant ─────────────────────────────────────────────
+                standard_aas = [
+                    "ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU",
+                    "GLY", "HIS", "ILE", "LEU", "LYS", "MET", "PHE",
+                    "PRO", "SER", "THR", "TRP", "TYR", "VAL",
+                ]
+                sel[3].selectbox(
+                    "Mutant", options=standard_aas,
+                    index=standard_aas.index(mutation_target) if mutation_target in standard_aas else 0,
+                    key="mut_target_sel", label_visibility="collapsed",
+                )
+            else:
+                st.warning(f"No residues of type **{aa_filter}** found in the selected range.")
+        else:
+            st.warning("No residues found in the selected range for this chain.")
+    elif do_mutation and not new_selected:
+        st.warning("⚠️ Select at least one chain above before configuring a mutation.")
 
     # ── Martinize2 Options ────────────────────────────────────────────────────
     st.divider()
