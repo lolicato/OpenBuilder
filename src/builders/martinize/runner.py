@@ -307,7 +307,8 @@ quit
                 shutil.copy2(config.cg_pdb_path, cg_pdb_dest)
                 shutil.copy2(config.cg_itp_path, cg_itp_dest)
                 
-                zip_path = self.create_output_zip(output_dir, config)
+                #zip_path = self.create_output_zip(output_dir, config)
+                zip_path = os.path.join(output_dir, "martinize_results.zip")
                 
                 results["success"] = True
                 results["message"] = "Coarse-grained protein files validated and prepared."
@@ -369,7 +370,8 @@ quit
                 with open(log_path, "w") as f:
                     f.write(log_output)
 
-                zip_path = self.create_output_zip(output_dir, config)
+                #zip_path = self.create_output_zip(output_dir, config)
+                zip_path = os.path.join(output_dir, "martinize_results.zip")
 
                 results["success"] = True
                 results["message"] = "Martinize completed successfully."

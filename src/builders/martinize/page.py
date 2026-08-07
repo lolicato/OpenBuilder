@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from enum import Enum, auto
 from pathlib import Path
 import streamlit as st
@@ -168,11 +169,19 @@ def _render_results_step(
 
     # Only execute once per visit
     if st.session_state.get("_martinize_building", True):
-        output_dir = os.path.join("outputs", "martinize_processing")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_dir = os.path.join("outputs", f"martinize_processing-{timestamp}")
         with st.spinner("Executing martinize2 workflow..."):
             output = runner.run(config, output_dir=output_dir)
         st.session_state["martinize_output"]   = output
         st.session_state["_martinize_building"] = False
+
+        # Populate config with output paths so membrane builder can use them
+        config.cg_pdb_path = output["outputs"].get("cg_pdb_path", "")
+        config.cg_itp_path = output["outputs"].get("itp_path", "")
+        st.session_state.martinize_config = config
+
+        runner.create_output_zip(output_dir, config)
 
     output = st.session_state.get("martinize_output", {})
 
@@ -199,11 +208,6 @@ def _render_results_step(
                     file_name="martinize_results.zip",
                     mime="application/zip",
                 )
-
-        # Populate config with output paths so membrane builder can use them
-        config.cg_pdb_path = outputs.get("cg_pdb_path", "")
-        config.cg_itp_path = outputs.get("itp_path", "")
-        st.session_state.martinize_config = config
 
         # Pre-seed the membrane builder's protein insertion session_state keys.
         # membrane/page.py reads "pdb_path" and "itp_path" from st.session_state
