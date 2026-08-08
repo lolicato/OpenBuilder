@@ -218,9 +218,9 @@ def _render_results_step(
 
     if st.session_state.get(building_key, True):
         timestamp  = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_dir = os.path.join(GlobalInfo().base_folder, f"martinize_processing-p{p}-{timestamp}")
+        pconfig.base_folder = os.path.join(GlobalInfo().base_folder, f"martinize_processing-p{p}-{timestamp}")
         with st.spinner(f"Executing martinize2 workflow for protein {p+1}..."):
-            output = runner.run(config, pconfig, output_dir=output_dir)
+            output = runner.run(config, protein_index=p)
         st.session_state[output_key] = output
         st.session_state[building_key] = False
 
@@ -229,7 +229,7 @@ def _render_results_step(
         pconfig.cg_itp_path = output["outputs"].get("itp_path", "")
         config.proteins[p]  = pconfig
         st.session_state.martinize_config = config
-        runner.create_output_zip(output_dir, config)
+        runner.create_output_zip(config, pconfig)
 
     output = st.session_state.get(output_key, {})
 
@@ -258,9 +258,12 @@ def _render_results_step(
                 )
 
         # Pre-seed membrane builder keys for the last protein
-        if is_last:
-            st.session_state["pdb_path"] = pconfig.cg_pdb_path
-            st.session_state["itp_path"] = pconfig.cg_itp_path
+        protein_files = st.session_state.get("protein_files", {})
+        st.session_state["protein_files"] = protein_files
+        f = pconfig.cg_pdb_path.split("/")[-1]
+        st.session_state["protein_files"][f] = {}
+        st.session_state["protein_files"][f]["pdb_path"] = pconfig.cg_pdb_path
+        st.session_state["protein_files"][f]["itp_path"] = pconfig.cg_itp_path
 
         st.divider()
         if is_last:
@@ -358,7 +361,7 @@ def _harvest_input_to_pconfig(
             temp_dir.mkdir(parents=True, exist_ok=True)
             if not st.session_state.get(f"cleaned_path_p{i}"):
                 try:
-                    cleaned = runner.clean_protein(raw_path, str(temp_dir))
+                    cleaned = runner.clean_protein(raw_path, str(temp_dir), i)
                     st.session_state[f"cleaned_path_p{i}"] = cleaned
                 except Exception as e:
                     st.error(f"Protein {i+1} cleaning failed: {e}")

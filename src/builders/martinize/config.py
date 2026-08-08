@@ -7,6 +7,7 @@ class ProteinConfig:
     """Configuration settings for a single protein object."""
     protein_input_mode: str = "upload_cg"  # "upload_cg" or "martinize"
     copy_number: int = 1
+    base_folder: str = ""
     
     # Already coarse-grained protein uploads
     cg_pdb_path: str = ""
@@ -48,6 +49,21 @@ class Config:
     build_mode: str = "membrane_only"  # "membrane_only" or "protein_membrane"
     n_proteins: int = 0
     proteins: List[ProteinConfig] = field(default_factory=list)
+
+    def __post_init__(self):
+        """Converts dictionary items in self.proteins into ProteinConfig instances."""
+        converted_proteins: List[ProteinConfig] = []
+        
+        for item in self.proteins:
+            if isinstance(item, dict):
+                converted_proteins.append(ProteinConfig(**item))
+            elif isinstance(item, ProteinConfig):
+                converted_proteins.append(item)
+            else:
+                raise TypeError(f"Unexpected type for protein entry: {type(item)}")
+        
+        self.proteins = converted_proteins
+        self.n_proteins = len(self.proteins)
 
     def to_dict(self) -> Dict[str, Any]:
         """Recursively converts the dataclass hierarchy into a dictionary."""

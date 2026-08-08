@@ -26,12 +26,12 @@ class MartinizeRunner:
             f.write(response.text)
         return output_path
 
-    def clean_protein(self, input_path: str, output_dir: str) -> str:
+    def clean_protein(self, input_path: str, output_dir: str, protein_index: int) -> str:
         u = mda.Universe(input_path)
         protein = u.select_atoms("protein")
         if len(protein) == 0:
             raise ValueError("No protein atoms found in the structure.")
-        output_path = os.path.join(output_dir, "protein_cleaned.pdb")
+        output_path = os.path.join(output_dir, f"protein_cleaned_p{protein_index}.pdb")
         protein.write(output_path)
         return output_path
 
@@ -187,7 +187,7 @@ quit
         has_moleculetype = False
         with open(itp_path, "r", errors="ignore") as f:
             for line in f:
-                if "[ moleculetype ]" in line.replace(" ", "").lower():
+                if "[moleculetype]" in line.replace(" ", "").lower():
                     has_moleculetype = True
                     break
         if not has_moleculetype:
@@ -195,12 +195,12 @@ quit
             
         return True, "Validation successful."
 
-    def run_martinize(self, pconfig: ProteinConfig, input_path: str, output_dir: str) -> Tuple[str, str, str, str, str]:
+    def run_martinize(self, pconfig: ProteinConfig, input_path: str, protein_index: int, output_dir: str) -> Tuple[str, str, str, str, str]:
         input_path = os.path.abspath(input_path)
         output_dir = os.path.abspath(output_dir)
-        output_cg = os.path.join(output_dir, "protein_cg.pdb")
-        output_top = os.path.join(output_dir, "protein.top")
-        output_itp = os.path.join(output_dir, "molecule_0.itp")
+        output_cg = os.path.join(output_dir, f"protein_cg_p{protein_index}.pdb")
+        output_top = os.path.join(output_dir, "protein_p{protein_index}.top")
+        output_itp = os.path.join(output_dir, f"molecule_p{protein_index}_0.itp")
 
         cmd = [
             "martinize2",
@@ -208,6 +208,7 @@ quit
             "-x", output_cg,
             "-o", output_top,
             "-ff", pconfig.forcefield,
+            "-name", f"molecule_p{protein_index}"
         ]
 
         if pconfig.secondary_structure_mode == "MDTraj DSSP":
@@ -261,8 +262,9 @@ quit
                     files.append(os.path.join(root, filename))
         return files
 
-    def create_output_zip(self, output_dir: str, config: Config) -> str:
+    def create_output_zip(self, config: Config, pconfig: ProteinConfig) -> str:
         # Write config JSON
+        output_dir = pconfig.base_folder
         config_path = os.path.join(output_dir, "martinize_config.json")
         with open(config_path, "w") as f:
             json.dump(config.to_dict(), f, indent=4)
@@ -277,120 +279,149 @@ quit
                     zipf.write(file_path, arcname)
         return zip_path
 
-    def run(self, config: Config, pconfig: ProteinConfig, output_dir: str = None) -> Dict[str, Any]:
-        if output_dir is None:
-            output_dir = self.default_output_dir
-        
-        os.makedirs(output_dir, exist_ok=True)
+    def run_one_protein(self, config: Config, pconfig: ProteinConfig, protein_index: int, output_dir: str) -> Dict[str, Any]:
         results = {
-            "success": False,
-            "message": "",
-            "outputs": {}
-        }
-
-        try:
-            if config.build_mode == "membrane_only":
-                results["success"] = True
-                results["message"] = "Membrane-only mode selected. No protein preprocessed."
-                return results
-
-            # Upload CG mode
-            if pconfig.protein_input_mode == "upload_cg":
-                is_valid, validation_msg = self.validate_cg_files(pconfig.cg_pdb_path, pconfig.cg_itp_path)
-                if not is_valid:
-                    results["message"] = f"Validation failed: {validation_msg}"
-                    return results
-
-                # Copy files to output directory
-                cg_pdb_dest = os.path.join(output_dir, os.path.basename(pconfig.cg_pdb_path))
-                cg_itp_dest = os.path.join(output_dir, os.path.basename(pconfig.cg_itp_path))
-                shutil.copy2(pconfig.cg_pdb_path, cg_pdb_dest)
-                shutil.copy2(pconfig.cg_itp_path, cg_itp_dest)
-                
-                zip_path = os.path.join(output_dir, "martinize_results.zip")
-                
-                results["success"] = True
-                results["message"] = "Coarse-grained protein files validated and prepared."
-                results["outputs"] = {
-                    "cg_pdb_path": cg_pdb_dest,
-                    "itp_path": cg_itp_dest,
-                    "zip_path": zip_path
-                }
-                return results
-
-            # Start from Atomistic mode
-            elif pconfig.protein_input_mode == "martinize":
-                # Find input pdb
-                input_pdb = ""
-                if pconfig.atomistic_source == "Upload PDB":
-                    if not pconfig.atomistic_pdb_path or not os.path.exists(pconfig.atomistic_pdb_path):
-                        results["message"] = "No atomistic PDB file uploaded or file does not exist."
-                        return results
-                    input_pdb = pconfig.atomistic_pdb_path
-                elif pconfig.atomistic_source == "Fetch from PDB database":
-                    if not pconfig.fetch_pdb_id:
-                        results["message"] = "No RCSB PDB ID provided."
-                        return results
-                    input_pdb = self.fetch_pdb(pconfig.fetch_pdb_id, output_dir)
-                else:
-                    results["message"] = f"Unknown atomistic source: {pconfig.atomistic_source}"
-                    return results
-
-                current_structure = input_pdb
-
-                # 1. Clean structure
-                if pconfig.clean_structure:
-                    current_structure = self.clean_protein(current_structure, output_dir)
-
-                # 2. Select chains (with ranges)
-                if pconfig.selected_chains:
-                    current_structure = self.select_chains_with_ranges(
-                        current_structure, pconfig.selected_chains, pconfig.chain_ranges, output_dir
-                    )
-
-                # 3. Optional Mutation
-                if pconfig.do_mutation:
-                    if not pconfig.mutation_chain or pconfig.mutation_residue_idx is None or not pconfig.mutation_target:
-                        results["message"] = "Mutation settings are incomplete."
-                        return results
-                    current_structure = self.mutate_with_pymol(
-                        current_structure,
-                        pconfig.mutation_chain,
-                        pconfig.mutation_residue_idx,
-                        pconfig.mutation_target,
-                        output_dir
-                    )
-
-                # 4. Martinize
-                cg_pdb, top_file, itp_file, command_run, log_output = self.run_martinize(pconfig, current_structure, output_dir)
-                
-                # Write log file
-                log_path = os.path.join(output_dir, "martinize.log")
-                with open(log_path, "w") as f:
-                    f.write(log_output)
-
-                zip_path = os.path.join(output_dir, "martinize_results.zip")
-
-                results["success"] = True
-                results["message"] = "Martinize completed successfully."
-                results["outputs"] = {
-                    "cg_pdb_path": cg_pdb,
-                    "top_path": top_file,
-                    "itp_path": itp_file,  # Need to think about how to do multiple chains
-                    "command": command_run,
-                    "log": log_output,
-                    "zip_path": zip_path
-                }
-                return results
-
-            else:
-                results["message"] = f"Unknown protein input mode: {pconfig.protein_input_mode}"
-                return results
-
-        except Exception as e:
-            results["message"] = f"Error during processing: {str(e)}"
+                        "success": False,
+                        "message": "",
+                        "outputs": {}
+                    }
+        
+        if config.build_mode == "membrane_only":
+            results["success"] = True
+            results["message"] = "Membrane-only mode selected. No protein preprocessed."
             return results
 
+        # Upload CG mode
+        if pconfig.protein_input_mode == "upload_cg":
+            is_valid, validation_msg = self.validate_cg_files(pconfig.cg_pdb_path, pconfig.cg_itp_path)
+            if not is_valid:
+                results["message"] = f"Validation failed: {validation_msg}"
+                return results
+
+            # Copy files to output directory
+            cg_pdb_dest = os.path.join(output_dir, os.path.basename(pconfig.cg_pdb_path))
+            cg_itp_dest = os.path.join(output_dir, os.path.basename(pconfig.cg_itp_path))
+            shutil.copy2(pconfig.cg_pdb_path, cg_pdb_dest)
+            shutil.copy2(pconfig.cg_itp_path, cg_itp_dest)
+            
+            zip_path = os.path.join(output_dir, "martinize_results.zip")
+            
+            results["success"] = True
+            results["message"] = "Coarse-grained protein files validated and prepared."
+            results["outputs"] = {
+                "cg_pdb_path": cg_pdb_dest,
+                "itp_path": cg_itp_dest,
+                "zip_path": zip_path
+            }
+            return results
+
+        # Start from Atomistic mode
+        elif pconfig.protein_input_mode == "martinize":
+            # Find input pdb
+            input_pdb = ""
+            if pconfig.atomistic_source == "Upload PDB":
+                if not pconfig.atomistic_pdb_path or not os.path.exists(pconfig.atomistic_pdb_path):
+                    results["message"] = "No atomistic PDB file uploaded or file does not exist."
+                    return results
+                input_pdb = pconfig.atomistic_pdb_path
+            elif pconfig.atomistic_source == "Fetch from PDB database":
+                if not pconfig.fetch_pdb_id:
+                    results["message"] = "No RCSB PDB ID provided."
+                    return results
+                input_pdb = self.fetch_pdb(pconfig.fetch_pdb_id, output_dir)
+            else:
+                results["message"] = f"Unknown atomistic source: {pconfig.atomistic_source}"
+                return results
+
+            current_structure = input_pdb
+
+            # 1. Clean structure
+            if pconfig.clean_structure:
+                current_structure = self.clean_protein(current_structure, output_dir, protein_index)
+
+            # 2. Select chains (with ranges)
+            if pconfig.selected_chains:
+                current_structure = self.select_chains_with_ranges(
+                    current_structure, pconfig.selected_chains, pconfig.chain_ranges, output_dir
+                )
+
+            # 3. Optional Mutation
+            if pconfig.do_mutation:
+                if not pconfig.mutation_chain or pconfig.mutation_residue_idx is None or not pconfig.mutation_target:
+                    results["message"] = "Mutation settings are incomplete."
+                    return results
+                current_structure = self.mutate_with_pymol(
+                    current_structure,
+                    pconfig.mutation_chain,
+                    pconfig.mutation_residue_idx,
+                    pconfig.mutation_target,
+                    output_dir
+                )
+
+            # 4. Martinize
+            cg_pdb, top_file, itp_file, command_run, log_output = self.run_martinize(
+                pconfig,
+                current_structure,
+                protein_index,
+                output_dir
+            )
+            
+            # Write log file
+            log_path = os.path.join(output_dir, "martinize.log")
+            with open(log_path, "w") as f:
+                f.write(log_output)
+
+            zip_path = os.path.join(output_dir, "martinize_results.zip")
+
+            results["success"] = True
+            results["message"] = "Martinize completed successfully."
+            results["outputs"] = {
+                "cg_pdb_path": cg_pdb,
+                "top_path": top_file,
+                "itp_path": itp_file,  # Need to think about how to do multiple chains
+                "command": command_run,
+                "log": log_output,
+                "zip_path": zip_path
+            }
+            return results
+
+        else:
+            results["message"] = f"Unknown protein input mode: {pconfig.protein_input_mode}"
+            return results
+
+    def run(self, config: Config, protein_index: int = None) -> Dict[str, Any]:
+        if protein_index is not None:
+            pconfig = config.proteins[protein_index]
+            output_dir = pconfig.base_folder
+            os.makedirs(output_dir, exist_ok=True)
+
+            try:
+                results = self.run_one_protein(config, pconfig, protein_index, output_dir)
+                return results
+            except Exception as e:
+                results = {
+                    "success": False,
+                    "message": "",
+                    "outputs": {}
+                }
+                results["message"] = f"Error during processing: {str(e)}"
+                return results
+        else:
+            for p in range(config.n_proteins):
+                pconfig = config.proteins[p]
+                output_dir = pconfig.base_folder
+                os.makedirs(output_dir, exist_ok=True)
+
+                try:
+                    results = self.run_one_protein(config, pconfig, p, output_dir)
+                except Exception as e:
+                    results = {
+                        "success": False,
+                        "message": "",
+                        "outputs": {}
+                    }
+                    results["message"] = f"Error during processing: {str(e)}"
+                    return results
 
 if __name__ == "__main__":
     import argparse
@@ -470,7 +501,7 @@ if __name__ == "__main__":
     
     runner = MartinizeRunner()
     print("Running Martinize Preprocessor CLI...")
-    result = runner.run(config, args.outdir)
+    result = runner.run(config)
     
     if result["success"]:
         print(f"SUCCESS: {result['message']}")

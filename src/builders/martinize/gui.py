@@ -197,20 +197,13 @@ def _render_copy_number(i: int, pconfig: ProteinConfig) -> None:
     """Render the copy number field with +/- buttons."""
     st.subheader("Number of copies")
     curr = st.session_state.get(f"copy_number_p{i}", pconfig.copy_number)
-    col_minus, col_num, col_plus = st.columns([1, 3, 1])
-    if col_minus.button("−", key=f"copy_minus_p{i}", use_container_width=True):
-        curr = max(1, curr - 1)
-        st.session_state[f"copy_number_p{i}"] = curr
-        st.rerun()
+    col_num, _ = st.columns([1,1])
     col_num.number_input(
         "Copies", min_value=1, step=1,
         value=curr,
         key=f"copy_number_p{i}",
         label_visibility="collapsed",
     )
-    if col_plus.button("+", key=f"copy_plus_p{i}", use_container_width=True):
-        st.session_state[f"copy_number_p{i}"] = curr + 1
-        st.rerun()
 
 
 # ─── Page 2: Configure & Martinize ────────────────────────────────────────────
