@@ -1,10 +1,12 @@
 from dataclasses import dataclass, field, asdict
 from typing import List, Dict, Any, Optional
 
+
 @dataclass
-class MartinizeConfig:
-    build_mode: str = "membrane_only"  # "membrane_only" or "protein_membrane"
+class ProteinConfig:
+    """Configuration settings for a single protein object."""
     protein_input_mode: str = "upload_cg"  # "upload_cg" or "martinize"
+    copy_number: int = 1
     
     # Already coarse-grained protein uploads
     cg_pdb_path: str = ""
@@ -39,5 +41,14 @@ class MartinizeConfig:
     cysteine_bridges: str = "auto"  # "auto", "detect", "none", etc.
     extra_flags: str = ""
 
+
+@dataclass
+class Config:
+    """Top-level configuration holding system-wide settings and protein entries."""
+    build_mode: str = "membrane_only"  # "membrane_only" or "protein_membrane"
+    n_proteins: int = 0
+    proteins: List[ProteinConfig] = field(default_factory=list)
+
     def to_dict(self) -> Dict[str, Any]:
+        """Recursively converts the dataclass hierarchy into a dictionary."""
         return asdict(self)

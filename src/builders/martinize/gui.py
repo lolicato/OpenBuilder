@@ -3,135 +3,41 @@ from pathlib import Path
 from typing import Dict, Any, List
 import streamlit as st
 
-from src.builders.martinize.config import MartinizeConfig
+from src.builders.martinize.config import Config, ProteinConfig
 
 
 # ─── Page 1: Protein Input ────────────────────────────────────────────────────
 
-def render_input(config: MartinizeConfig, temp_folder: str) -> None:
-    """Render the protein input page (source selection, upload/fetch, clean option).
+def render_input(config: Config, temp_folder: str) -> None:
+    """Render the protein input page.
 
-    Pure presentation: writes widget values into st.session_state and sets
-    ``_martinize_input_action`` to "next" or "back" when navigation buttons are
-    pressed.  No processing logic lives here.
+    Shows one panel per protein in config.proteins.  Each panel has its own
+    header ("Protein N"), a delete button, mode selection, file upload / RCSB
+    fetch, copy_number field, and a clean-structure checkbox.
+
+    All widget keys are namespaced with ``_p{i}`` so panels don't collide.
+
+    Sets the following session_state signals:
+    - ``_martinize_input_action``  : "next" | "back"
+    - ``_martinize_add_protein``   : True  (add a blank protein)
+    - ``_martinize_delete_protein``: int   (index of protein to delete)
+    - ``_martinize_fetch_requested``: int  (index of protein to fetch PDB for)
     """
     st.title("🧬 Protein Structure Input")
-    st.caption("Provide your protein structure to be coarse-grained with martinize2.")
-
-    # ── Protein input mode ────────────────────────────────────────────────────
-    protein_input_mode = st.radio(
-        "How do you want to provide the protein structure?",
-        ["upload_cg", "martinize"],
-        format_func=lambda x: {
-            "upload_cg": "Upload already coarse-grained PDB/GRO + topology ITP",
-            "martinize": "Start from atomistic PDB (Download from RCSB or Upload)",
-        }[x],
-        index=["upload_cg", "martinize"].index(
-            st.session_state.get("protein_input_mode", config.protein_input_mode)
-        ),
-        key="protein_input_mode",
-    )
-
-    st.divider()
+    st.caption("Provide the protein structures to be coarse-grained with martinize2.")
 
     temp_dir = Path(temp_folder) / "protein_input"
     temp_dir.mkdir(parents=True, exist_ok=True)
 
-    if protein_input_mode == "upload_cg":
-        # ── Upload coarse-grained files ───────────────────────────────────────
-        st.subheader("Upload Coarse-Grained Protein Files")
-        col1, col2 = st.columns(2)
-        with col1:
-            uploaded_cg_pdb = st.file_uploader(
-                "Upload CG Structure (.pdb, .gro)", type=["pdb", "gro"],
-                key="cg_pdb_uploader",
-            )
-            if uploaded_cg_pdb:
-                dest = str(temp_dir / uploaded_cg_pdb.name)
-                with open(dest, "wb") as f:
-                    f.write(uploaded_cg_pdb.getvalue())
-                st.session_state["cg_pdb_path"] = dest
-                st.success(f"Uploaded: {uploaded_cg_pdb.name}")
-            elif "cg_pdb_path" not in st.session_state:
-                st.session_state["cg_pdb_path"] = config.cg_pdb_path
+    # ── One panel per protein ─────────────────────────────────────────────────
+    for i, pconfig in enumerate(config.proteins):
+        _render_protein_panel(i, pconfig, config.n_proteins, temp_dir)
 
-        with col2:
-            uploaded_cg_itp = st.file_uploader(
-                "Upload Protein Topology (.itp)", type=["itp"],
-                key="cg_itp_uploader",
-            )
-            if uploaded_cg_itp:
-                dest = str(temp_dir / uploaded_cg_itp.name)
-                with open(dest, "wb") as f:
-                    f.write(uploaded_cg_itp.getvalue())
-                st.session_state["cg_itp_path"] = dest
-                st.success(f"Uploaded: {uploaded_cg_itp.name}")
-            elif "cg_itp_path" not in st.session_state:
-                st.session_state["cg_itp_path"] = config.cg_itp_path
-
-    else:
-        # ── Atomistic source ──────────────────────────────────────────────────
-        st.subheader("Atomistic Structure Input")
-
-        atomistic_source = st.radio(
-            "Select atomistic structure source:",
-            ["Upload PDB", "Fetch from PDB database"],
-            index=["Upload PDB", "Fetch from PDB database"].index(
-                st.session_state.get("atomistic_source", config.atomistic_source)
-            ),
-            key="atomistic_source",
-        )
-
-        if atomistic_source == "Upload PDB":
-            uploaded_at = st.file_uploader(
-                "Upload Atomistic PDB File", type=["pdb"],
-                key="atomistic_pdb_uploader",
-            )
-            if uploaded_at:
-                dest = str(temp_dir / uploaded_at.name)
-                with open(dest, "wb") as f:
-                    f.write(uploaded_at.getvalue())
-                # Reset downstream state when a new file is uploaded
-                prev = st.session_state.get("atomistic_path", "")
-                if prev != dest:
-                    _reset_downstream_state()
-                st.session_state["atomistic_path"] = dest
-                st.success(f"Uploaded: {uploaded_at.name}")
-
-        else:
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                fetch_pdb_id = st.text_input(
-                    "Enter 4-letter RCSB PDB ID:",
-                    value=st.session_state.get("fetch_pdb_id", config.fetch_pdb_id),
-                    placeholder="e.g. 1UBQ",
-                    key="fetch_pdb_id",
-                ).strip()
-            with col2:
-                st.write(" ")
-                st.write(" ")
-                if st.button("Fetch Structure", type="primary"):
-                    if len(fetch_pdb_id) == 4:
-                        # Signal page.py to perform the fetch
-                        st.session_state["_martinize_fetch_requested"] = True
-                        st.rerun()
-                    else:
-                        st.error("PDB ID must be exactly 4 characters.")
-
-            if st.session_state.get("fetched_pdb_success"):
-                st.success(st.session_state["fetched_pdb_success"])
-
-        if st.session_state.get("atomistic_path"):
-            st.write(f"**Loaded structure:** `{st.session_state['atomistic_path']}`")
-
-        # ── Clean structure checkbox ───────────────────────────────────────────
-        st.divider()
-        st.subheader("Structure Clean-up")
-        st.checkbox(
-            "Clean structure with MDAnalysis (removes water, ligands, ions – keeps protein only)",
-            value=st.session_state.get("clean_structure", config.clean_structure),
-            key="clean_structure",
-        )
+    # ── Add a protein ─────────────────────────────────────────────────────────
+    st.divider()
+    if st.button("➕ Add a protein", use_container_width=False):
+        st.session_state["_martinize_add_protein"] = True
+        st.rerun()
 
     # ── Navigation ────────────────────────────────────────────────────────────
     with st.container(key="nav_martinize_input"):
@@ -145,36 +51,202 @@ def render_input(config: MartinizeConfig, temp_folder: str) -> None:
             st.rerun()
 
 
+def _render_protein_panel(
+    i: int,
+    pconfig: ProteinConfig,
+    n_proteins: int,
+    temp_dir: Path,
+) -> None:
+    """Render the input panel for the i-th protein (0-based index)."""
+    with st.container(border=True):
+        # ── Header row ────────────────────────────────────────────────────────
+        hdr_left, hdr_right = st.columns([4, 1])
+        hdr_left.subheader(f"Protein {i + 1}")
+        if hdr_right.button(
+            "🗑 Delete", key=f"del_protein_{i}",
+            use_container_width=True,
+            help="Remove this protein from the workflow",
+        ):
+            st.session_state["_martinize_delete_protein"] = i
+            st.rerun()
+
+        # ── Mode radio ────────────────────────────────────────────────────────
+        mode_key = f"protein_input_mode_p{i}"
+        protein_input_mode = st.radio(
+            "How do you want to provide the protein structure?",
+            ["upload_cg", "martinize"],
+            format_func=lambda x: {
+                "upload_cg": "Upload already coarse-grained PDB/GRO + topology ITP",
+                "martinize": "Start from atomistic PDB (Download from RCSB or Upload)",
+            }[x],
+            index=["upload_cg", "martinize"].index(
+                st.session_state.get(mode_key, pconfig.protein_input_mode)
+            ),
+            key=mode_key,
+        )
+
+        st.divider()
+
+        if protein_input_mode == "upload_cg":
+            _render_upload_cg_panel(i, pconfig, temp_dir)
+        else:
+            _render_atomistic_panel(i, pconfig, temp_dir)
+
+        # ── Copy number ───────────────────────────────────────────────────────
+        st.divider()
+        _render_copy_number(i, pconfig)
+
+
+def _render_upload_cg_panel(i: int, pconfig: ProteinConfig, temp_dir: Path) -> None:
+    st.subheader("Upload Coarse-Grained Protein Files")
+    col1, col2 = st.columns(2)
+
+    with col1:
+        uploaded_cg_pdb = st.file_uploader(
+            "Upload CG Structure (.pdb, .gro)", type=["pdb", "gro"],
+            key=f"cg_pdb_uploader_p{i}",
+        )
+        if uploaded_cg_pdb:
+            dest = str(temp_dir / f"p{i}_{uploaded_cg_pdb.name}")
+            with open(dest, "wb") as f:
+                f.write(uploaded_cg_pdb.getvalue())
+            st.session_state[f"cg_pdb_path_p{i}"] = dest
+            st.success(f"Uploaded: {uploaded_cg_pdb.name}")
+        elif f"cg_pdb_path_p{i}" not in st.session_state:
+            st.session_state[f"cg_pdb_path_p{i}"] = pconfig.cg_pdb_path
+
+    with col2:
+        uploaded_cg_itp = st.file_uploader(
+            "Upload Protein Topology (.itp)", type=["itp"],
+            key=f"cg_itp_uploader_p{i}",
+        )
+        if uploaded_cg_itp:
+            dest = str(temp_dir / f"p{i}_{uploaded_cg_itp.name}")
+            with open(dest, "wb") as f:
+                f.write(uploaded_cg_itp.getvalue())
+            st.session_state[f"cg_itp_path_p{i}"] = dest
+            st.success(f"Uploaded: {uploaded_cg_itp.name}")
+        elif f"cg_itp_path_p{i}" not in st.session_state:
+            st.session_state[f"cg_itp_path_p{i}"] = pconfig.cg_itp_path
+
+
+def _render_atomistic_panel(i: int, pconfig: ProteinConfig, temp_dir: Path) -> None:
+    st.subheader("Atomistic Structure Input")
+
+    source_key = f"atomistic_source_p{i}"
+    atomistic_source = st.radio(
+        "Select atomistic structure source:",
+        ["Upload PDB", "Fetch from PDB database"],
+        index=["Upload PDB", "Fetch from PDB database"].index(
+            st.session_state.get(source_key, pconfig.atomistic_source)
+        ),
+        key=source_key,
+    )
+
+    if atomistic_source == "Upload PDB":
+        uploaded_at = st.file_uploader(
+            "Upload Atomistic PDB File", type=["pdb"],
+            key=f"atomistic_pdb_uploader_p{i}",
+        )
+        if uploaded_at:
+            dest = str(temp_dir / f"p{i}_{uploaded_at.name}")
+            with open(dest, "wb") as f:
+                f.write(uploaded_at.getvalue())
+            prev = st.session_state.get(f"atomistic_path_p{i}", "")
+            if prev != dest:
+                _reset_downstream_state(i)
+            st.session_state[f"atomistic_path_p{i}"] = dest
+            st.success(f"Uploaded: {uploaded_at.name}")
+    else:
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.text_input(
+                "Enter 4-letter RCSB PDB ID:",
+                value=st.session_state.get(f"fetch_pdb_id_p{i}", pconfig.fetch_pdb_id),
+                placeholder="e.g. 1UBQ",
+                key=f"fetch_pdb_id_p{i}",
+            )
+        with col2:
+            st.write(" ")
+            st.write(" ")
+            if st.button("Fetch Structure", type="primary", key=f"fetch_btn_p{i}"):
+                pdb_id = st.session_state.get(f"fetch_pdb_id_p{i}", "").strip()
+                if len(pdb_id) == 4:
+                    st.session_state["_martinize_fetch_requested"] = i
+                    st.rerun()
+                else:
+                    st.error("PDB ID must be exactly 4 characters.")
+
+        if st.session_state.get(f"fetched_pdb_success_p{i}"):
+            st.success(st.session_state[f"fetched_pdb_success_p{i}"])
+
+    if st.session_state.get(f"atomistic_path_p{i}"):
+        st.write(f"**Loaded structure:** `{st.session_state[f'atomistic_path_p{i}']}`")
+
+    # Clean-up checkbox
+    st.divider()
+    st.subheader("Structure Clean-up")
+    st.checkbox(
+        "Clean structure with MDAnalysis (removes water, ligands, ions – keeps protein only)",
+        value=st.session_state.get(f"clean_structure_p{i}", pconfig.clean_structure),
+        key=f"clean_structure_p{i}",
+    )
+
+
+def _render_copy_number(i: int, pconfig: ProteinConfig) -> None:
+    """Render the copy number field with +/- buttons."""
+    st.subheader("Number of copies")
+    curr = st.session_state.get(f"copy_number_p{i}", pconfig.copy_number)
+    col_minus, col_num, col_plus = st.columns([1, 3, 1])
+    if col_minus.button("−", key=f"copy_minus_p{i}", use_container_width=True):
+        curr = max(1, curr - 1)
+        st.session_state[f"copy_number_p{i}"] = curr
+        st.rerun()
+    col_num.number_input(
+        "Copies", min_value=1, step=1,
+        value=curr,
+        key=f"copy_number_p{i}",
+        label_visibility="collapsed",
+    )
+    if col_plus.button("+", key=f"copy_plus_p{i}", use_container_width=True):
+        st.session_state[f"copy_number_p{i}"] = curr + 1
+        st.rerun()
+
+
 # ─── Page 2: Configure & Martinize ────────────────────────────────────────────
 
 def render_configure(
-    config: MartinizeConfig,
+    pconfig: ProteinConfig,
+    protein_idx: int,
     chains: List[str],
     summaries: Dict[str, Any],
 ) -> None:
-    """Render the configuration page (chain selection, mutations, martinize options).
+    """Render the configuration page for a single protein.
 
-    Pure presentation only.  Sets ``_martinize_configure_action`` to "next",
+    Pure presentation only.  Sets ``_martinize_configure_action`` to
     "back", "run", or "dssp_preview" on button presses.
+
+    All widget keys are namespaced with ``_p{protein_idx}`` so state is
+    independent for each protein.
     """
+    p = protein_idx  # shorthand for key namespacing
+
     st.title("⚙️ Configure & Martinize")
-    st.caption("Select chains, configure mutations, and set martinize2 parameters.")
+    st.caption(f"Protein {protein_idx + 1} — Select chains, configure mutations, and set martinize2 parameters.")
 
     # ── Chain selection ───────────────────────────────────────────────────────
     st.subheader("Chain Selection")
 
-    # Always define these so the mutation block below can read them regardless
-    # of whether any chains exist in the structure.
     new_selected: List[str] = []
     new_ranges: Dict[str, List[int]] = {}
 
     if chains:
         prev_selected: List[str] = st.session_state.get(
-            "selected_chains", config.selected_chains or chains
+            f"selected_chains_p{p}", pconfig.selected_chains or chains
         )
         prev_selected = [c for c in prev_selected if c in chains]
         chain_ranges: Dict[str, List[int]] = st.session_state.get(
-            "chain_ranges", dict(config.chain_ranges)
+            f"chain_ranges_p{p}", dict(pconfig.chain_ranges)
         )
 
         hdr = st.columns([0.5, 1, 1.5, 1.5, 1.5, 1.5])
@@ -190,7 +262,7 @@ def render_configure(
             row = st.columns([0.5, 1, 1.5, 1.5, 1.5, 1.5])
             is_selected = row[0].checkbox(
                 "sel", value=(c in prev_selected),
-                key=f"chain_sel_{c}", label_visibility="collapsed",
+                key=f"chain_sel_{c}_p{p}", label_visibility="collapsed",
             )
             row[1].write(c)
             if s:
@@ -213,12 +285,12 @@ def render_configure(
                     range_start = rc[0].number_input(
                         "From", min_value=first_resid, max_value=last_resid,
                         value=max(first_resid, min(last_resid, prev_start)),
-                        key=f"chain_range_start_{c}", label_visibility="collapsed",
+                        key=f"chain_range_start_{c}_p{p}", label_visibility="collapsed",
                     )
                     range_end = rc[1].number_input(
                         "To", min_value=first_resid, max_value=last_resid,
                         value=max(first_resid, min(last_resid, prev_end)),
-                        key=f"chain_range_end_{c}", label_visibility="collapsed",
+                        key=f"chain_range_end_{c}_p{p}", label_visibility="collapsed",
                     )
                     new_ranges[c] = [int(range_start), int(range_end)]
                 else:
@@ -227,9 +299,8 @@ def render_configure(
         if not new_selected:
             st.warning("⚠️ Please select at least one chain.")
 
-        # Persist for next rerun (page.py reads these before routing)
-        st.session_state["selected_chains"] = new_selected
-        st.session_state["chain_ranges"]    = new_ranges
+        st.session_state[f"selected_chains_p{p}"] = new_selected
+        st.session_state[f"chain_ranges_p{p}"]    = new_ranges
 
     else:
         st.warning("No protein chains could be identified in the structure.")
@@ -239,22 +310,18 @@ def render_configure(
     st.subheader("Mutation")
     do_mutation = st.checkbox(
         "Introduce residue mutation",
-        value=st.session_state.get("do_mutation", config.do_mutation),
-        key="do_mutation",
+        value=st.session_state.get(f"do_mutation_p{p}", pconfig.do_mutation),
+        key=f"do_mutation_p{p}",
     )
 
     if do_mutation and new_selected:
-        mutation_chain       = st.session_state.get("mutation_chain",       config.mutation_chain)
-        mutation_residue_idx = st.session_state.get("mutation_residue_idx", config.mutation_residue_idx)
-        mutation_target      = st.session_state.get("mutation_target",      config.mutation_target)
+        mutation_chain       = st.session_state.get(f"mutation_chain_p{p}",       pconfig.mutation_chain)
+        mutation_residue_idx = st.session_state.get(f"mutation_residue_idx_p{p}", pconfig.mutation_residue_idx)
+        mutation_target      = st.session_state.get(f"mutation_target_p{p}",      pconfig.mutation_target)
 
-        # Restrict chain options to the chains that are currently selected above.
-        # If the previously chosen mutation chain is no longer selected, fall back
-        # to the first selected chain.
         if mutation_chain not in new_selected:
             mutation_chain = new_selected[0]
 
-        # Column order: SEGID | Amino acid filter | RESID | Mutant
         hdr = st.columns([1.2, 1.2, 1.2, 1.2])
         hdr[0].markdown("**Chain ID**")
         hdr[1].markdown("**Amino acid**")
@@ -263,63 +330,45 @@ def render_configure(
 
         sel = st.columns([1.2, 1.2, 1.2, 1.2])
 
-        # ── col 0: Chain ──────────────────────────────────────────────────────
         mutation_chain = sel[0].selectbox(
             "Chain", options=new_selected,
             index=new_selected.index(mutation_chain),
-            key="mut_chain_sel", label_visibility="collapsed",
+            key=f"mut_chain_sel_p{p}", label_visibility="collapsed",
         )
 
-        # Full residue list for this chain (pre-loaded by page.py, never modified)
-        all_residues = st.session_state.get(f"residues_{mutation_chain}", [])
-
-        # Filter to the residue range chosen for this chain in the table above.
+        all_residues = st.session_state.get(f"residues_{mutation_chain}_p{p}", [])
         chosen_range = new_ranges.get(mutation_chain, [])
         if chosen_range and len(chosen_range) == 2:
             range_start_val, range_end_val = chosen_range
-            range_residues = [
-                r for r in all_residues
-                if range_start_val <= r["resid"] <= range_end_val
-            ]
+            range_residues = [r for r in all_residues if range_start_val <= r["resid"] <= range_end_val]
         else:
             range_residues = all_residues
 
         if range_residues:
-            # ── col 1: AA filter ─────────────────────────────────────────────
-            # Build a sorted list of unique residue names present in the
-            # range-filtered residue list. "All" means no AA filter.
             unique_names = sorted({r["resname"] for r in range_residues})
             aa_filter_opts = ["All"] + unique_names
-            prev_aa_filter = st.session_state.get("mut_aa_filter", "All")
+            prev_aa_filter = st.session_state.get(f"mut_aa_filter_p{p}", "All")
             if prev_aa_filter not in aa_filter_opts:
                 prev_aa_filter = "All"
             aa_filter = sel[1].selectbox(
                 "AA filter", options=aa_filter_opts,
                 index=aa_filter_opts.index(prev_aa_filter),
-                key="mut_aa_filter", label_visibility="collapsed",
+                key=f"mut_aa_filter_p{p}", label_visibility="collapsed",
             )
 
-            # Apply AA filter to get the residues shown in the RESID column.
-            if aa_filter == "All":
-                visible_residues = range_residues
-            else:
-                visible_residues = [r for r in range_residues if r["resname"] == aa_filter]
-
+            visible_residues = range_residues if aa_filter == "All" else [
+                r for r in range_residues if r["resname"] == aa_filter
+            ]
             resid_list = [r["resid"] for r in visible_residues]
 
-            # ── col 2: RESID ─────────────────────────────────────────────────
             if resid_list:
-                # If previously selected resid is no longer in the filtered
-                # list (e.g. user changed chain or AA filter), reset to first.
                 if mutation_residue_idx not in resid_list:
                     mutation_residue_idx = resid_list[0]
-                sel_resid = sel[2].selectbox(
+                sel[2].selectbox(
                     "RESID", options=resid_list,
                     index=resid_list.index(mutation_residue_idx),
-                    key="mut_resid_sel", label_visibility="collapsed",
+                    key=f"mut_resid_sel_p{p}", label_visibility="collapsed",
                 )
-
-                # ── col 3: Mutant ─────────────────────────────────────────────
                 standard_aas = [
                     "ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU",
                     "GLY", "HIS", "ILE", "LEU", "LYS", "MET", "PHE",
@@ -328,7 +377,7 @@ def render_configure(
                 sel[3].selectbox(
                     "Mutant", options=standard_aas,
                     index=standard_aas.index(mutation_target) if mutation_target in standard_aas else 0,
-                    key="mut_target_sel", label_visibility="collapsed",
+                    key=f"mut_target_sel_p{p}", label_visibility="collapsed",
                 )
             else:
                 st.warning(f"No residues of type **{aa_filter}** found in the selected range.")
@@ -345,90 +394,82 @@ def render_configure(
     st.selectbox(
         "Force field (-ff):",
         forcefield_opts,
-        index=forcefield_opts.index(
-            st.session_state.get("forcefield", config.forcefield)
-        ),
-        key="forcefield",
+        index=forcefield_opts.index(st.session_state.get(f"forcefield_p{p}", pconfig.forcefield)),
+        key=f"forcefield_p{p}",
     )
 
     ss_opts = ["MDTraj DSSP", "All coil", "None", "Custom/Precalculated"]
     st.selectbox(
         "Secondary structure mode:",
         ss_opts,
-        index=ss_opts.index(
-            st.session_state.get("secondary_structure_mode", config.secondary_structure_mode)
-        ),
-        key="secondary_structure_mode",
+        index=ss_opts.index(st.session_state.get(f"secondary_structure_mode_p{p}", pconfig.secondary_structure_mode)),
+        key=f"secondary_structure_mode_p{p}",
     )
 
-    if st.session_state.get("secondary_structure_mode") == "Custom/Precalculated":
+    if st.session_state.get(f"secondary_structure_mode_p{p}") == "Custom/Precalculated":
         st.text_input(
             "Precalculated secondary structure string (-ss):",
-            value=st.session_state.get("custom_ss_string", config.custom_ss_string),
+            value=st.session_state.get(f"custom_ss_string_p{p}", pconfig.custom_ss_string),
             placeholder="e.g. HHHHCCCCCCEEEEEE",
-            key="custom_ss_string",
+            key=f"custom_ss_string_p{p}",
         )
 
-    if st.session_state.get("secondary_structure_mode") == "MDTraj DSSP":
-        if st.button("Preview calculated DSSP sequence"):
+    if st.session_state.get(f"secondary_structure_mode_p{p}") == "MDTraj DSSP":
+        if st.button("Preview calculated DSSP sequence", key=f"dssp_btn_p{p}"):
             st.session_state["_martinize_configure_action"] = "dssp_preview"
             st.rerun()
-        if "dssp_preview_result" in st.session_state:
+        if f"dssp_preview_result_p{p}" in st.session_state:
             st.text_area(
-                "DSSP String Preview:", value=st.session_state["dssp_preview_result"],
-                height=100, disabled=True,
+                "DSSP String Preview:", value=st.session_state[f"dssp_preview_result_p{p}"],
+                height=100, disabled=True, key=f"dssp_area_p{p}",
             )
-            if "dssp_preview_error" in st.session_state:
-                st.error(st.session_state.pop("dssp_preview_error"))
+            if f"dssp_preview_error_p{p}" in st.session_state:
+                st.error(st.session_state.pop(f"dssp_preview_error_p{p}"))
 
     st.checkbox(
         "Enable elastic network (-elastic)",
-        value=st.session_state.get("use_elastic_network", config.use_elastic_network),
-        key="use_elastic_network",
+        value=st.session_state.get(f"use_elastic_network_p{p}", pconfig.use_elastic_network),
+        key=f"use_elastic_network_p{p}",
     )
-    if st.session_state.get("use_elastic_network", config.use_elastic_network):
+    if st.session_state.get(f"use_elastic_network_p{p}", pconfig.use_elastic_network):
         c1, c2, c3 = st.columns(3)
         c1.number_input(
             "Lower cutoff (-el nm)", min_value=0.0, max_value=5.0, step=0.1,
-            value=st.session_state.get("elastic_lower", config.elastic_lower),
-            key="elastic_lower",
+            value=st.session_state.get(f"elastic_lower_p{p}", pconfig.elastic_lower),
+            key=f"elastic_lower_p{p}",
         )
         c2.number_input(
             "Upper cutoff (-eu nm)", min_value=0.0, max_value=5.0, step=0.1,
-            value=st.session_state.get("elastic_upper", config.elastic_upper),
-            key="elastic_upper",
+            value=st.session_state.get(f"elastic_upper_p{p}", pconfig.elastic_upper),
+            key=f"elastic_upper_p{p}",
         )
         c3.number_input(
             "Force constant (-ef)", min_value=0.0, max_value=10000.0, step=100.0,
-            value=st.session_state.get("elastic_force", config.elastic_force),
-            key="elastic_force",
+            value=st.session_state.get(f"elastic_force_p{p}", pconfig.elastic_force),
+            key=f"elastic_force_p{p}",
         )
 
     restraints_opts = ["none", "backbone", "all"]
     st.selectbox(
         "Position restraints (-p):",
         restraints_opts,
-        index=restraints_opts.index(
-            st.session_state.get("position_restraints", config.position_restraints)
-        ),
-        key="position_restraints",
+        index=restraints_opts.index(st.session_state.get(f"position_restraints_p{p}", pconfig.position_restraints)),
+        key=f"position_restraints_p{p}",
     )
 
     cys_opts = ["auto", "detect", "none"]
     st.selectbox(
         "Cysteine bridges (-cys):",
         cys_opts,
-        index=cys_opts.index(
-            st.session_state.get("cysteine_bridges", config.cysteine_bridges)
-        ),
-        key="cysteine_bridges",
+        index=cys_opts.index(st.session_state.get(f"cysteine_bridges_p{p}", pconfig.cysteine_bridges)),
+        key=f"cysteine_bridges_p{p}",
     )
 
     st.text_input(
         "Extra martinize2 options (space-separated):",
-        value=st.session_state.get("extra_flags", config.extra_flags),
+        value=st.session_state.get(f"extra_flags_p{p}", pconfig.extra_flags),
         placeholder="e.g. -maxwarn 5 -nt",
-        key="extra_flags",
+        key=f"extra_flags_p{p}",
     )
 
     # ── Navigation ────────────────────────────────────────────────────────────
@@ -445,16 +486,18 @@ def render_configure(
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
-def _reset_downstream_state() -> None:
-    """Clear all state that depends on the loaded structure."""
+def _reset_downstream_state(protein_idx: int) -> None:
+    """Clear all session state that depends on the loaded structure for protein i."""
+    p = protein_idx
     for key in [
-        "cleaned_path", "selected_chain_path", "mutated_path",
-        "fetched_pdb_success", "selected_chains", "chain_ranges",
-        "do_mutation", "mutation_chain", "mutation_residue_idx",
-        "mutation_residue_name", "mutation_target", "dssp_preview_result",
+        f"cleaned_path_p{p}", f"fetched_pdb_success_p{p}",
+        f"selected_chains_p{p}", f"chain_ranges_p{p}",
+        f"do_mutation_p{p}", f"mutation_chain_p{p}",
+        f"mutation_residue_idx_p{p}", f"mutation_residue_name_p{p}",
+        f"mutation_target_p{p}", f"dssp_preview_result_p{p}",
+        f"active_struct_p{p}", f"chains_p{p}", f"chain_summaries_p{p}",
     ]:
         st.session_state.pop(key, None)
-    # Remove cached residue lists for any chain
     for key in list(st.session_state.keys()):
-        if key.startswith("residues_"):
+        if key.startswith(f"residues_") and key.endswith(f"_p{p}"):
             del st.session_state[key]

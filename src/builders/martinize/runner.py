@@ -8,7 +8,7 @@ from typing import Dict, Any, Tuple, List
 import MDAnalysis as mda
 import mdtraj as md
 
-from src.builders.martinize.config import MartinizeConfig
+from src.builders.martinize.config import Config, ProteinConfig
 
 class MartinizeRunner:
     def __init__(self, default_output_dir: str = "temp"):
@@ -195,7 +195,7 @@ quit
             
         return True, "Validation successful."
 
-    def run_martinize(self, config: MartinizeConfig, input_path: str, output_dir: str) -> Tuple[str, str, str, str, str]:
+    def run_martinize(self, pconfig: ProteinConfig, input_path: str, output_dir: str) -> Tuple[str, str, str, str, str]:
         input_path = os.path.abspath(input_path)
         output_dir = os.path.abspath(output_dir)
         output_cg = os.path.join(output_dir, "protein_cg.pdb")
@@ -207,34 +207,34 @@ quit
             "-f", input_path,
             "-x", output_cg,
             "-o", output_top,
-            "-ff", config.forcefield,
+            "-ff", pconfig.forcefield,
         ]
 
-        if config.secondary_structure_mode == "MDTraj DSSP":
+        if pconfig.secondary_structure_mode == "MDTraj DSSP":
             ss = self.get_secondary_structure_mdtraj(input_path)
             cmd.extend(["-ss", ss])
-        elif config.secondary_structure_mode == "All coil":
+        elif pconfig.secondary_structure_mode == "All coil":
             cmd.extend(["-ss", "C"])
-        elif config.secondary_structure_mode == "Custom/Precalculated":
-            if config.custom_ss_string:
-                cmd.extend(["-ss", config.custom_ss_string.strip()])
+        elif pconfig.secondary_structure_mode == "Custom/Precalculated":
+            if pconfig.custom_ss_string:
+                cmd.extend(["-ss", pconfig.custom_ss_string.strip()])
 
-        if config.use_elastic_network:
+        if pconfig.use_elastic_network:
             cmd.extend([
                 "-elastic",
-                "-el", str(config.elastic_lower),
-                "-eu", str(config.elastic_upper),
-                "-ef", str(config.elastic_force),
+                "-el", str(pconfig.elastic_lower),
+                "-eu", str(pconfig.elastic_upper),
+                "-ef", str(pconfig.elastic_force),
             ])
 
-        if config.position_restraints != "none":
-            cmd.extend(["-p", config.position_restraints])
+        if pconfig.position_restraints != "none":
+            cmd.extend(["-p", pconfig.position_restraints])
 
-        if config.cysteine_bridges:
-            cmd.extend(["-cys", config.cysteine_bridges])
+        if pconfig.cysteine_bridges:
+            cmd.extend(["-cys", pconfig.cysteine_bridges])
 
-        if config.extra_flags:
-            cmd.extend(config.extra_flags.split())
+        if pconfig.extra_flags:
+            cmd.extend(pconfig.extra_flags.split())
 
         result = subprocess.run(
             cmd,
@@ -261,7 +261,7 @@ quit
                     files.append(os.path.join(root, filename))
         return files
 
-    def create_output_zip(self, output_dir: str, config: MartinizeConfig) -> str:
+    def create_output_zip(self, output_dir: str, config: Config) -> str:
         # Write config JSON
         config_path = os.path.join(output_dir, "martinize_config.json")
         with open(config_path, "w") as f:
@@ -277,7 +277,7 @@ quit
                     zipf.write(file_path, arcname)
         return zip_path
 
-    def run(self, config: MartinizeConfig, output_dir: str = None) -> Dict[str, Any]:
+    def run(self, config: Config, pconfig: ProteinConfig, output_dir: str = None) -> Dict[str, Any]:
         if output_dir is None:
             output_dir = self.default_output_dir
         
@@ -295,19 +295,18 @@ quit
                 return results
 
             # Upload CG mode
-            if config.protein_input_mode == "upload_cg":
-                is_valid, validation_msg = self.validate_cg_files(config.cg_pdb_path, config.cg_itp_path)
+            if pconfig.protein_input_mode == "upload_cg":
+                is_valid, validation_msg = self.validate_cg_files(pconfig.cg_pdb_path, pconfig.cg_itp_path)
                 if not is_valid:
                     results["message"] = f"Validation failed: {validation_msg}"
                     return results
 
                 # Copy files to output directory
-                cg_pdb_dest = os.path.join(output_dir, os.path.basename(config.cg_pdb_path))
-                cg_itp_dest = os.path.join(output_dir, os.path.basename(config.cg_itp_path))
-                shutil.copy2(config.cg_pdb_path, cg_pdb_dest)
-                shutil.copy2(config.cg_itp_path, cg_itp_dest)
+                cg_pdb_dest = os.path.join(output_dir, os.path.basename(pconfig.cg_pdb_path))
+                cg_itp_dest = os.path.join(output_dir, os.path.basename(pconfig.cg_itp_path))
+                shutil.copy2(pconfig.cg_pdb_path, cg_pdb_dest)
+                shutil.copy2(pconfig.cg_itp_path, cg_itp_dest)
                 
-                #zip_path = self.create_output_zip(output_dir, config)
                 zip_path = os.path.join(output_dir, "martinize_results.zip")
                 
                 results["success"] = True
@@ -320,57 +319,56 @@ quit
                 return results
 
             # Start from Atomistic mode
-            elif config.protein_input_mode == "martinize":
+            elif pconfig.protein_input_mode == "martinize":
                 # Find input pdb
                 input_pdb = ""
-                if config.atomistic_source == "Upload PDB":
-                    if not config.atomistic_pdb_path or not os.path.exists(config.atomistic_pdb_path):
+                if pconfig.atomistic_source == "Upload PDB":
+                    if not pconfig.atomistic_pdb_path or not os.path.exists(pconfig.atomistic_pdb_path):
                         results["message"] = "No atomistic PDB file uploaded or file does not exist."
                         return results
-                    input_pdb = config.atomistic_pdb_path
-                elif config.atomistic_source == "Fetch from PDB database":
-                    if not config.fetch_pdb_id:
+                    input_pdb = pconfig.atomistic_pdb_path
+                elif pconfig.atomistic_source == "Fetch from PDB database":
+                    if not pconfig.fetch_pdb_id:
                         results["message"] = "No RCSB PDB ID provided."
                         return results
-                    input_pdb = self.fetch_pdb(config.fetch_pdb_id, output_dir)
+                    input_pdb = self.fetch_pdb(pconfig.fetch_pdb_id, output_dir)
                 else:
-                    results["message"] = f"Unknown atomistic source: {config.atomistic_source}"
+                    results["message"] = f"Unknown atomistic source: {pconfig.atomistic_source}"
                     return results
 
                 current_structure = input_pdb
 
                 # 1. Clean structure
-                if config.clean_structure:
+                if pconfig.clean_structure:
                     current_structure = self.clean_protein(current_structure, output_dir)
 
                 # 2. Select chains (with ranges)
-                if config.selected_chains:
+                if pconfig.selected_chains:
                     current_structure = self.select_chains_with_ranges(
-                        current_structure, config.selected_chains, config.chain_ranges, output_dir
+                        current_structure, pconfig.selected_chains, pconfig.chain_ranges, output_dir
                     )
 
                 # 3. Optional Mutation
-                if config.do_mutation:
-                    if not config.mutation_chain or config.mutation_residue_idx is None or not config.mutation_target:
+                if pconfig.do_mutation:
+                    if not pconfig.mutation_chain or pconfig.mutation_residue_idx is None or not pconfig.mutation_target:
                         results["message"] = "Mutation settings are incomplete."
                         return results
                     current_structure = self.mutate_with_pymol(
                         current_structure,
-                        config.mutation_chain,
-                        config.mutation_residue_idx,
-                        config.mutation_target,
+                        pconfig.mutation_chain,
+                        pconfig.mutation_residue_idx,
+                        pconfig.mutation_target,
                         output_dir
                     )
 
                 # 4. Martinize
-                cg_pdb, top_file, itp_file, command_run, log_output = self.run_martinize(config, current_structure, output_dir)
+                cg_pdb, top_file, itp_file, command_run, log_output = self.run_martinize(pconfig, current_structure, output_dir)
                 
                 # Write log file
                 log_path = os.path.join(output_dir, "martinize.log")
                 with open(log_path, "w") as f:
                     f.write(log_output)
 
-                #zip_path = self.create_output_zip(output_dir, config)
                 zip_path = os.path.join(output_dir, "martinize_results.zip")
 
                 results["success"] = True
@@ -386,7 +384,7 @@ quit
                 return results
 
             else:
-                results["message"] = f"Unknown protein input mode: {config.protein_input_mode}"
+                results["message"] = f"Unknown protein input mode: {pconfig.protein_input_mode}"
                 return results
 
         except Exception as e:
@@ -438,12 +436,12 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    # Map parsed arguments to MartinizeConfig
+    # Map parsed arguments to Config
     source = args.atomistic_source
     if args.fetch_id and not args.pdb and source == "Upload PDB":
         source = "Fetch from PDB database"
         
-    config = MartinizeConfig(
+    config = Config(
         build_mode=args.build_mode,
         protein_input_mode=args.protein_input_mode,
         cg_pdb_path=args.cg_pdb,
