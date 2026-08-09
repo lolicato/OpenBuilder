@@ -138,14 +138,11 @@ def _render_input_step(
                 for err in all_errors:
                     st.error(err)
             else:
-                # Pre-load chain data for the first protein that needs martinize
-                first_martinize = next(
-                    (i for i, p in enumerate(config.proteins) if p.protein_input_mode == "martinize"),
-                    None,
-                )
-                if first_martinize is not None:
-                    _load_chain_data(config.proteins[first_martinize], first_martinize, runner)
-                    _set_protein_idx(first_martinize)
+                # Go to the configure step if input mode is martinize, else go to the result step
+                first_input_mode = config.proteins[0].protein_input_mode
+                if first_input_mode == "martinize":
+                    _load_chain_data(config.proteins[0], 0, runner)
+                    _set_protein_idx(0)
                     _set_step(MartinizeStep.CONFIGURE)
                 else:
                     # All proteins are pre-built CG — go straight to results for protein 0
