@@ -397,6 +397,7 @@ quit
 
             try:
                 results = self.run_one_protein(config, pconfig, protein_index, output_dir)
+                self.create_output_zip(config, pconfig)
                 return results
             except Exception as e:
                 results = {
@@ -414,6 +415,7 @@ quit
 
                 try:
                     results = self.run_one_protein(config, pconfig, p, output_dir)
+                    self.create_output_zip(config, pconfig)
                 except Exception as e:
                     results = {
                         "success": False,
@@ -422,92 +424,3 @@ quit
                     }
                     results["message"] = f"Error during processing: {str(e)}"
                     return results
-
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(description="Run Martinize protein preprocessor command line interface.")
-    
-    # Mode configurations
-    parser.add_argument("--build-mode", choices=["membrane_only", "protein_membrane"], default="protein_membrane")
-    parser.add_argument("--protein-input-mode", choices=["upload_cg", "martinize"], default="martinize")
-    
-    # Upload CG structures
-    parser.add_argument("--cg-pdb", default="")
-    parser.add_argument("--cg-itp", default="")
-    
-    # Atomistic options
-    parser.add_argument("--atomistic-source", choices=["Upload PDB", "Fetch from PDB database"], default="Upload PDB")
-    parser.add_argument("--pdb", default="")
-    parser.add_argument("--fetch-id", default="")
-    
-    # Preprocessing
-    parser.add_argument("--no-clean", action="store_true", help="Do not clean structure with MDAnalysis")
-    parser.add_argument("--chains", default="", help="Comma separated chains to keep, e.g. A,B")
-    
-    # Mutation
-    parser.add_argument("--mutate-chain", default="")
-    parser.add_argument("--mutate-resid", type=int, default=None)
-    parser.add_argument("--mutate-resname", default="")
-    parser.add_argument("--mutate-target", default="")
-    
-    # Martinize options
-    parser.add_argument("--ff", default="martini3001")
-    parser.add_argument("--ss-mode", choices=["MDTraj DSSP", "All coil", "None", "Custom/Precalculated"], default="MDTraj DSSP")
-    parser.add_argument("--ss-string", default="", help="Custom secondary structure string if --ss-mode is 'Custom/Precalculated'")
-    parser.add_argument("--no-elastic", action="store_true", help="Disable elastic network")
-    parser.add_argument("--el", type=float, default=0.5)
-    parser.add_argument("--eu", type=float, default=0.9)
-    parser.add_argument("--ef", type=float, default=700.0)
-    parser.add_argument("--restraints", choices=["none", "backbone", "all"], default="none")
-    parser.add_argument("--cys", default="auto")
-    parser.add_argument("--extra-flags", default="")
-    
-    # Output
-    parser.add_argument("--outdir", default="outputs/martinize_cli")
-    
-    args = parser.parse_args()
-    
-    # Map parsed arguments to Config
-    source = args.atomistic_source
-    if args.fetch_id and not args.pdb and source == "Upload PDB":
-        source = "Fetch from PDB database"
-        
-    config = Config(
-        build_mode=args.build_mode,
-        protein_input_mode=args.protein_input_mode,
-        cg_pdb_path=args.cg_pdb,
-        cg_itp_path=args.cg_itp,
-        atomistic_source=source,
-        atomistic_pdb_path=args.pdb,
-        fetch_pdb_id=args.fetch_id,
-        clean_structure=not args.no_clean,
-        selected_chains=[c.strip() for c in args.chains.split(",") if c.strip()] if args.chains else [],
-        do_mutation=bool(args.mutate_chain and args.mutate_resid is not None and args.mutate_target),
-        mutation_chain=args.mutate_chain,
-        mutation_residue_idx=args.mutate_resid,
-        mutation_residue_name=args.mutate_resname,
-        mutation_target=args.mutate_target,
-        forcefield=args.ff,
-        secondary_structure_mode=args.ss_mode,
-        custom_ss_string=args.ss_string,
-        use_elastic_network=not args.no_elastic,
-        elastic_lower=args.el,
-        elastic_upper=args.eu,
-        elastic_force=args.ef,
-        position_restraints=args.restraints,
-        cysteine_bridges=args.cys,
-        extra_flags=args.extra_flags
-    )
-    
-    runner = MartinizeRunner()
-    print("Running Martinize Preprocessor CLI...")
-    result = runner.run(config)
-    
-    if result["success"]:
-        print(f"SUCCESS: {result['message']}")
-        print("Outputs:")
-        for k, v in result["outputs"].items():
-            print(f"  {k}: {v}")
-    else:
-        print(f"FAILED: {result['message']}")
-

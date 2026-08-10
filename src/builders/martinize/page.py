@@ -221,13 +221,6 @@ def _render_results_step(
         st.session_state[output_key] = output
         st.session_state[building_key] = False
 
-        # Update pconfig with outputs and re-zip with updated config
-        pconfig.cg_pdb_path = output["outputs"].get("cg_pdb_path", "")
-        pconfig.cg_itp_path = output["outputs"].get("itp_path", "")
-        config.proteins[p]  = pconfig
-        st.session_state.martinize_config = config
-        runner.create_output_zip(config, pconfig)
-
     output = st.session_state.get(output_key, {})
 
     st.title(f"🧬 Martinize Results — Protein {p + 1}")
@@ -257,10 +250,20 @@ def _render_results_step(
         # Pre-seed membrane builder keys for the last protein
         protein_files = st.session_state.get("protein_files", {})
         st.session_state["protein_files"] = protein_files
-        f = pconfig.cg_pdb_path.split("/")[-1]
+        if pconfig.protein_input_mode == "upload_cg":
+            f = pconfig.cg_pdb_path.split("/")[-1]
+            pdb = pconfig.cg_pdb_path
+            itp = pconfig.cg_itp_path
+        elif pconfig.protein_input_mode == "martinize":
+            f = outputs.get('cg_pdb_path').split("/")[-1]
+            pdb = outputs.get('cg_pdb_path')
+            itp = outputs.get('itp_path')
+        else:
+            raise ValueError(f"Unknown protein input mode: {pconfig.protein_input_mode}")
+
         st.session_state["protein_files"][f] = {}
-        st.session_state["protein_files"][f]["pdb_path"] = pconfig.cg_pdb_path
-        st.session_state["protein_files"][f]["itp_path"] = pconfig.cg_itp_path
+        st.session_state["protein_files"][f]["pdb_path"] = pdb
+        st.session_state["protein_files"][f]["itp_path"] = itp
 
         st.divider()
         if is_last:
